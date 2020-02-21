@@ -25,6 +25,7 @@ library
       Data.Semigroup
       Data.List
       Data.List.NonEmpty
+      Liquid.ProofCombinators
   other-modules:
       Paths_liquid_base
   hs-source-dirs:

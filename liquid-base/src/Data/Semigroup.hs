@@ -5,22 +5,26 @@ module Data.Semigroup where
 import           Prelude                 hiding ( Semigroup(..)
                                                 , Monoid(..)
                                                 , foldr
+                                                , head
+                                                , tail
                                                 )
 
 import           Data.List
-import           Data.List.NonEmpty
+import           Data.List.NonEmpty             ( NonEmpty(..) )
+import qualified Data.List.NonEmpty as NonEmpty
+import qualified Liquid.ProofCombinators
 
 class Semigroup a where
     {-@ mappend :: a -> a -> a @-}
     mappend :: a -> a -> a
-    sconcat :: a -> List a -> a
+    sconcat :: NonEmpty a -> a
 
 class Semigroup a => VSemigroup a where
     {-@ lawAssociative :: v:a -> v':a -> v'':a -> {mappend (mappend v v') v'' == mappend v (mappend v' v'')} @-}
     lawAssociative :: a -> a -> a -> ()
 
-    {-@ lawSconcat :: x:a -> ys:List a -> {foldr mappend x ys == sconcat x ys} @-}
-    lawSconcat :: a -> List a -> ()
+    {-@ lawSconcat :: ys:NonEmpty a -> {foldr mappend (NonEmpty.head' ys) (NonEmpty.tail' ys) == sconcat ys} @-}
+    lawSconcat :: NonEmpty a -> ()
 
 class Semigroup a => Monoid a where
     {-@ mempty :: a @-}
@@ -38,12 +42,12 @@ instance Semigroup PNat where
   mappend Z     n = n
   mappend (S m) n = S (mappend m n)
 
-  sconcat = foldr mappend
+  sconcat (NonEmpty h t) = foldr mappend h t
 
 instance VSemigroup PNat where
   lawAssociative Z     _ _ = ()
   lawAssociative (S p) m n = lawAssociative p m n
-  lawSconcat _ _ = ()
+  lawSconcat _ = ()
 
 instance Monoid PNat where
   mempty = Z
