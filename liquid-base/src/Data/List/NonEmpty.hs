@@ -2,7 +2,8 @@
 {-@ LIQUID "--ple" @-}
 module Data.List.NonEmpty where
 
-import           Prelude ()
+import           Prelude                 hiding ( foldr
+                                                )
 
 import           Data.List
 

@@ -23,6 +23,8 @@ extra-source-files:
 library
   exposed-modules:
       Data.Semigroup
+      Data.List
+      Data.List.NonEmpty
   other-modules:
       Paths_liquid_base
   hs-source-dirs:

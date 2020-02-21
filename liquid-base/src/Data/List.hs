@@ -2,7 +2,8 @@
 {-@ LIQUID "--ple" @-}
 module Data.List where
 
-import           Prelude ()
+import           Prelude                 hiding ( foldr
+                                                )
 
 data List a = Nil | Cons a (List a)
 
