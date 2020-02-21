@@ -11,8 +11,9 @@ version:        0.1.0.0
 -- license:        BSD3
 -- license-file:   LICENSE
 build-type:     Simple
--- extra-source-files:
---     README.md
+extra-source-files:
+    README.md
+    LICENSE-base
 --     ChangeLog.md
 
 -- source-repository head

@@ -11,6 +11,8 @@ data VList a = VNil | VCons a (VList a)
 
 class Semigroup a where
     mappend :: a -> a -> a
+
+class Semigroup a => VSemigroup a where
     {-@ lawAssociative :: v:a -> v':a -> v'':a -> {mappend (mappend v v') v'' == mappend v (mappend v' v'')} @-}
     sconcat :: a -> VList a -> a
     lawAssociative :: a -> a -> a -> ()
@@ -18,9 +20,12 @@ class Semigroup a where
     lawSconcat :: a -> VList a -> ()
 
 class Semigroup a => Monoid a where
-   mempty :: a
-   {-@ lawEmpty :: x:a -> {mappend x mempty == x && mappend mempty x == x} @-}
-   lawEmpty :: a -> ()
+    mempty :: a
+
+class (VSemigroup a, Monoid a) => VMonoid a where
+    {-@ lawEmpty :: x:a -> {mappend x mempty == x && mappend mempty x == x} @-}
+    lawEmpty :: a -> ()
+
 
 {-@ reflect vfoldr @-}
 vfoldr :: (a -> b -> b) -> b -> VList a -> b
@@ -33,6 +38,8 @@ data PNat = Z | S PNat
 instance Semigroup PNat where
   mappend Z     n = n
   mappend (S m) n = S (mappend m n)
+
+instance VSemigroup PNat where
   lawAssociative Z     _ _ = ()
   lawAssociative (S p) m n = lawAssociative p m n
   sconcat = vfoldr mappend
@@ -40,5 +47,8 @@ instance Semigroup PNat where
 
 instance Monoid PNat where
   mempty = Z
+
+instance VMonoid PNat where
   lawEmpty Z     = ()
   lawEmpty (S m) = lawEmpty m
+
