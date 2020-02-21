@@ -52,3 +52,19 @@ instance VMonoid PNat where
   lawEmpty Z     = ()
   lawEmpty (S m) = lawEmpty m
 
+-- Dual
+data Dual a = Dual {getDual :: a}
+
+instance Semigroup a => Semigroup (Dual a) where
+  mappend (Dual v) (Dual v') = Dual (mappend v' v)
+  sconcat = foldr mappend
+
+instance Monoid a => Monoid (Dual a) where
+  mempty = Dual mempty
+
+instance VSemigroup a => VSemigroup (Dual a) where
+  lawAssociative (Dual v) (Dual v') (Dual v'') = lawAssociative v'' v' v
+  lawSconcat _ _ = ()
+
+-- instance VMonoid a => VMonoid (Dual a) where
+--   lawEmpty (Dual v) = lawEmpty v
