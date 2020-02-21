@@ -5,6 +5,8 @@ module Data.Semigroup where
 import           Prelude                 hiding ( Semigroup(..)
                                                 , Monoid(..)
                                                 , foldr
+                                                , head
+                                                , tail
                                                 )
 
 import           Data.List
@@ -21,7 +23,7 @@ class Semigroup a => VSemigroup a where
     {-@ lawAssociative :: v:a -> v':a -> v'':a -> {mappend (mappend v v') v'' == mappend v (mappend v' v'')} @-}
     lawAssociative :: a -> a -> a -> ()
 
-    {-@ lawSconcat :: ys:NonEmpty a -> {foldr mappend (NonEmpty.head ys) (NonEmpty.tail ys) == sconcat ys} @-}
+    {-@ lawSconcat :: ys:NonEmpty a -> {foldr mappend (NonEmpty.head' ys) (NonEmpty.tail' ys) == sconcat ys} @-}
     lawSconcat :: NonEmpty a -> ()
 
 class Semigroup a => Monoid a where
