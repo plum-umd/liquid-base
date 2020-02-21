@@ -11,6 +11,7 @@ import           Data.List
 import           Data.List.NonEmpty
 
 class Semigroup a where
+    {-@ mappend :: a -> a -> a @-}
     mappend :: a -> a -> a
     sconcat :: a -> List a -> a
 
@@ -22,6 +23,7 @@ class Semigroup a => VSemigroup a where
     lawSconcat :: a -> List a -> ()
 
 class Semigroup a => Monoid a where
+    {-@ mempty :: a @-}
     mempty :: a
 
 class (VSemigroup a, Monoid a) => VMonoid a where
