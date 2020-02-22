@@ -5,11 +5,13 @@ module Data.Semigroup where
 import           Prelude                 hiding ( Semigroup(..)
                                                 , Monoid(..)
                                                 , foldr
+                                                , foldl'
                                                 , head
                                                 , tail
                                                 )
 
-import           Data.List
+import           Data.List                      ( List(..) )
+import qualified Data.List as List
 import           Data.List.NonEmpty             ( NonEmpty(..) )
 import qualified Data.List.NonEmpty as NonEmpty
 import qualified Liquid.ProofCombinators
@@ -23,7 +25,7 @@ class Semigroup a => VSemigroup a where
     {-@ lawAssociative :: v:a -> v':a -> v'':a -> {mappend (mappend v v') v'' == mappend v (mappend v' v'')} @-}
     lawAssociative :: a -> a -> a -> ()
 
-    {-@ lawSconcat :: ys:NonEmpty a -> {foldr mappend (NonEmpty.head' ys) (NonEmpty.tail' ys) == sconcat ys} @-}
+    {-@ lawSconcat :: ys:NonEmpty a -> {List.foldl' mappend (NonEmpty.head' ys) (NonEmpty.tail' ys) == sconcat ys} @-}
     lawSconcat :: NonEmpty a -> ()
 
 class Semigroup a => Monoid a where
@@ -42,7 +44,7 @@ instance Semigroup PNat where
   mappend Z     n = n
   mappend (S m) n = S (mappend m n)
 
-  sconcat (NonEmpty h t) = foldr mappend h t
+  sconcat (NonEmpty h t) = List.foldl' mappend h t
 
 instance VSemigroup PNat where
   lawAssociative Z     _ _ = ()
@@ -61,7 +63,7 @@ data Dual a = Dual {getDual :: a}
 
 instance Semigroup a => Semigroup (Dual a) where
   mappend (Dual v) (Dual v') = Dual (mappend v' v)
-  sconcat (NonEmpty h t) = foldr mappend h t
+  sconcat (NonEmpty h t) = List.foldl' mappend h t
 
 instance Monoid a => Monoid (Dual a) where
   mempty = Dual mempty
