@@ -30,9 +30,14 @@ class Semigroup a => Monoid a where
     {-@ mempty :: a @-}
     mempty :: a
 
+    mconcat :: List a -> a
+
 class (VSemigroup a, Monoid a) => VMonoid a where
     {-@ lawEmpty :: x:a -> {mappend x mempty == x && mappend mempty x == x} @-}
     lawEmpty :: a -> ()
+
+    {-@ lawMconcat :: xs:List a -> {mconcat xs = foldr mappend mempty xs} @-}
+    lawMconcat :: List a -> ()
 
 
 -- Natural Numbers
@@ -51,10 +56,12 @@ instance VSemigroup PNat where
 
 instance Monoid PNat where
   mempty = Z
+  mconcat xs = foldr mappend mempty xs
 
 instance VMonoid PNat where
   lawEmpty Z     = ()
   lawEmpty (S m) = lawEmpty m
+  lawMconcat _ = ()
 
 -- Dual
 data Dual a = Dual {getDual :: a}
@@ -65,6 +72,7 @@ instance Semigroup a => Semigroup (Dual a) where
 
 instance Monoid a => Monoid (Dual a) where
   mempty = Dual mempty
+  mconcat xs = foldr mappend mempty xs
 
 instance VSemigroup a => VSemigroup (Dual a) where
   lawAssociative (Dual v) (Dual v') (Dual v'') = lawAssociative v'' v' v
@@ -72,3 +80,4 @@ instance VSemigroup a => VSemigroup (Dual a) where
 
 -- instance VMonoid a => VMonoid (Dual a) where
 --   lawEmpty (Dual v) = lawEmpty v
+--   lawMconcat _ = ()
