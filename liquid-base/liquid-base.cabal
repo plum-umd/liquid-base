@@ -22,9 +22,10 @@ extra-source-files:
 
 library
   exposed-modules:
-      Data.Semigroup
+      Data.Functor
       Data.List
       Data.List.NonEmpty
+      Data.Semigroup
       Liquid.ProofCombinators
   other-modules:
       Paths_liquid_base
