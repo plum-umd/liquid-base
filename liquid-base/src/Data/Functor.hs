@@ -3,6 +3,7 @@
 module Data.Functor where
 
 import           Prelude                 hiding ( Functor(..)
+                                                , Applicative(..)
                                                 , id
                                                 )
 
@@ -23,14 +24,19 @@ class Functor m => VFunctor m where
     {-@ lawFunctorId :: forall a . x:m a -> {fmap id' x == id' x} @-}
     lawFunctorId :: m a -> ()
 
-    {-@ lawFunctorComposition :: forall a b c . f:(b -> c) -> g:(a -> b) -> x:m a -> {((fmap (compose f g) x) == ((compose (fmap f) (fmap g)) x))} @-}
+--     TODO: This doesn't unify XXX
+    {-@ lawFunctorComposition :: forall a b c . f:(b -> c) -> g:(a -> b) -> x:m a -> { fmap (compose f g) x == compose (fmap f) (fmap g) x } @-}
     lawFunctorComposition :: (b -> c) -> (a -> b) -> m a -> ()
 
-class Functor f => MyApplicative f where
+class Functor f => Applicative f where
   {-@ pure :: forall a. a -> f a @-}
   pure :: a -> f a
   {-@ ap :: forall a b. f (a -> b) -> f a -> f b @-}
   ap :: f (a -> b) -> f a -> f b
+
+  -- JP: There are others here, but I don't think they're necessary
+
+class (Functor f, Applicative f) => VApplicative f where
   {-@ myprop :: forall a b. x:f a -> f:(a -> b) -> {fmap f x == ap (pure f) x} @-}
   myprop :: f a -> (a -> b) -> ()
 
@@ -42,9 +48,11 @@ instance Functor MyId where
   fmap f (MyId i) = MyId (f i)
   x <$ (MyId _) = MyId x
   
-instance MyApplicative MyId where
+instance Applicative MyId where
   pure = MyId
   ap (MyId f) (MyId a) = MyId (f a)
+
+instance VApplicative MyId where
   myprop _ _ = ()
 
 data Optional a = None | Has a
@@ -55,11 +63,13 @@ instance Functor Optional where
   _ <$ None = None
   x <$ (Has _) = Has x
 
-instance MyApplicative Optional where
+instance Applicative Optional where
   pure = Has
   ap None _ = None
   ap _ None = None
   ap (Has f) (Has x) = Has (f x)
+
+instance VApplicative Optional where
   myprop _ _ = ()
 
 {-@ impl :: x:Bool -> y:Bool -> {v:Bool | v <=> (x => y)} @-}
