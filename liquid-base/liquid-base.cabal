@@ -25,6 +25,7 @@ library
       Data.Functor
       Data.List
       Data.List.NonEmpty
+      Data.Proxy
       Data.Semigroup
       Liquid.ProofCombinators
   other-modules:
