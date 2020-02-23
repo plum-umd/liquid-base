@@ -71,13 +71,6 @@ class (VFunctor f, Applicative f) => VApplicative f where
 --   lawApplicativeInterchange :: f (a -> b -> c) -> c -> f b -> ()
 
 
--- TODO: Prove the following
--- fmap f x = pure f <*> x
--- forall x y. p (q x y) = f x . g y => liftA2 p (liftA2 q u v) = liftA2 f u . liftA2 g v
-
-
--- {-@ myprop :: forall a b . x:f a -> f:(a -> b) -> {fmap f x == ap (pure f) x} @-}
--- myprop :: f a -> (a -> b) -> ()
 
   
 {-@ data MyId a = MyId a @-}
@@ -88,6 +81,8 @@ instance Functor MyId where
   x <$ (MyId _) = MyId x
 
 instance VFunctor MyId where
+    lawFunctorId = undefined -- TODO: FIXME XXX
+
   
 instance Applicative MyId where
   pure = MyId
@@ -99,8 +94,6 @@ instance Applicative MyId where
 instance VApplicative MyId where
   lawApplicativeId _ = ()
 
-  -- myprop _ _ = ()
-
 -- TODO: Define `Maybe a` in Data.Maybe
 data Optional a = None | Has a
 
@@ -111,6 +104,7 @@ instance Functor Optional where
   x <$ (Has _) = Has x
 
 instance VFunctor Optional where
+    lawFunctorId = undefined -- TODO: FIXME XXX
 
 instance Applicative Optional where
   pure = Has
@@ -125,16 +119,20 @@ instance Applicative Optional where
 instance VApplicative Optional where
   lawApplicativeId _ = undefined -- TODO: FIXME XXX
 
-  -- myprop _ _ = ()
 
-{-@ impl :: x:Bool -> y:Bool -> {v:Bool | v <=> (x => y)} @-}
-impl :: Bool -> Bool -> Bool
-impl a b = if a then b else True
 
-{-@ reflect ffmap @-}
-ffmap :: Functor f => (a -> b) -> f a -> f b
-ffmap = fmap
 
-{-@ trivial :: Functor f => f:(a -> b) -> x:f a -> {fmap f x == ffmap f x} @-}
-trivial :: Functor f => (a -> b) -> f a -> ()
-trivial _ _ = ()
+-- Abstract proofs.
+
+-- -- TODO: Prove this
+-- {-@ applicativeLemma1 :: VApplicative m => f:(a -> b) -> x:m a -> {fmap f x = ap (pure f) x} @-}
+-- applicativeLemma1 :: VApplicative m => (a -> b) -> m a -> ()
+-- applicativeLemma1 f x = undefined
+-- 
+-- -- TODO: Prove this
+-- {-@ applicativeLemma2 :: VApplicative m => f:(d -> c -> e) -> g:(a -> b -> c) -> p:_ -> {q:_ | p (q x y) = compose (f x) (g y)} -> {liftA2 p (liftA2 q u v) = compose (liftA2 f u) (liftA2 g v)} @-}
+-- applicativeLemma2 :: VApplicative m => (d -> c -> e) -> (a -> b -> c) -> _ -> _ -> ()
+-- applicativeLemma2 f g p q = undefined
+
+
+
