@@ -59,25 +59,14 @@ class (VFunctor f, Applicative f) => VApplicative f where
   {-@ lawApplicativeId :: forall a . v:f a -> {ap (pure id') v = v} @-}
   lawApplicativeId :: f a -> ()
 
---     TODO: This doesn't type check XXX
   {-@ lawApplicativeComposition :: forall a b c . u:f (b -> c) -> v:f (a -> b) -> w:f a -> {ap (ap (ap (pure compose) u) v) w = ap u (ap v w)} @-}
   lawApplicativeComposition :: forall a b c. f (b -> c) -> f (a -> b) -> f a -> ()
 
---   TODO: Cannot elaborate `px`. Add an inline type annotation for VV? XXX
   {-@ lawApplicativeHomomorphism :: forall a b . g:(a -> b) -> x:a -> {px:f a | px = pure x} -> {ap (pure g) px = pure (g x)} @-}
   lawApplicativeHomomorphism :: forall a b. (a -> b) -> a -> f a -> ()
 
---   TODO: The law doesn't bind `f` and we can't add type annotations to refinement expressions... (old)
---   {-@ lawApplicativeHomomorphism :: forall a b . Proxy (f a) -> g:(a -> b) -> x:a -> {ap (pure g) (pure x :: f a) = pure (g x)} @-}
---   lawApplicativeHomomorphism :: Proxy (f a) -> (a -> b) -> a -> ()
-
-
-
---   TODO: I'm messing this up somehow
---   {-@ lawApplicativeInterchange :: forall a b c . u:f (a -> b -> c) -> y:c -> z:f b -> {ap u (pure y) z = ap (pure (flip apply y)) u z} @-}
---   lawApplicativeInterchange :: f (a -> b -> c) -> c -> f b -> ()
-
-
+  {-@ lawApplicativeInterchange :: forall a b . u:f (a -> b) -> y:a -> {ap u (pure y) = ap (pure (flip apply y)) u} @-}
+  lawApplicativeInterchange :: forall a b . f (a -> b) -> a -> ()
 
   
 {-@ data MyId a = MyId a @-}
@@ -103,6 +92,8 @@ instance VApplicative MyId where
   lawApplicativeId _ = ()
   lawApplicativeComposition (MyId f) (MyId g) (MyId x) = ()
   lawApplicativeHomomorphism f x (MyId y) = ()
+  lawApplicativeInterchange (MyId f) _ = ()
+
 
 -- TODO: Define `Maybe a` in Data.Maybe
 data Optional a = None | Has a
@@ -114,7 +105,7 @@ instance Functor Optional where
   x <$ (Has _) = Has x
 
 instance VFunctor Optional where
-    lawFunctorId x = () -- TODO: FIXME XXX
+    lawFunctorId x = ()
     lawFunctorComposition f g None = ()
     lawFunctorComposition f g (Has x) = ()
 
@@ -135,6 +126,8 @@ instance VApplicative Optional where
   lawApplicativeComposition _ _ _ = ()
   lawApplicativeHomomorphism f x (Has y) = ()
   lawApplicativeHomomorphism f x None = ()
+  lawApplicativeInterchange None _ = ()
+  lawApplicativeInterchange (Has f) _ = ()
 
 
 
