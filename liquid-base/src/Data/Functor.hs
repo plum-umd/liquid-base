@@ -40,7 +40,6 @@ class Functor m => VFunctor m where
     {-@ lawFunctorId :: forall a . x:m a -> {fmap id' x == id' x} @-}
     lawFunctorId :: m a -> ()
 
---     TODO: This doesn't unify XXX
     {-@ lawFunctorComposition :: forall a b c . f:(b -> c) -> g:(a -> b) -> x:m a -> { fmap (compose f g) x == compose (fmap f) (fmap g) x } @-}
     lawFunctorComposition :: forall a b c. (b -> c) -> (a -> b) -> m a -> ()
 
@@ -78,7 +77,7 @@ instance Functor MyId where
 
 instance VFunctor MyId where
     lawFunctorId _ = ()
-    lawFunctorComposition f g (MyId x) = () -- TODO: FIXME XXX
+    lawFunctorComposition f g (MyId x) = ()
 
   
 instance Applicative MyId where
