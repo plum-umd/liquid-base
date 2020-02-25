@@ -75,12 +75,12 @@ instance Monoid a => Monoid (Dual a) where
   mconcat xs = foldr mappend mempty xs
 
 -- TODO: Can't prove because unfolded too much?
--- instance VSemigroup a => VSemigroup (Dual a) where
---   lawAssociative (Dual v) (Dual v') (Dual v'') = lawAssociative v'' v' v
---   lawSconcat (NonEmpty h t) = sconcat (NonEmpty h t) `P.cast` ()
+instance VSemigroup a => VSemigroup (Dual a) where
+  lawAssociative (Dual v) (Dual v') (Dual v'') = lawAssociative v'' v' v
+  lawSconcat (NonEmpty h t) = sconcat (NonEmpty h t) `P.cast` ()
 
--- instance VMonoid a => VMonoid (Dual a) where
---   lawEmpty (Dual v) = lawEmpty v
---   -- TODO: fix this
---   lawMconcat x@Nil = mconcat x `P.cast` ()
---   lawMconcat (Cons x xs) = undefined -- foldr mappend mempty (Cons x xs) `P.cast` ()
+instance VMonoid a => VMonoid (Dual a) where
+  lawEmpty (Dual v) = lawEmpty v
+  -- TODO: fix this
+  lawMconcat x@Nil = mconcat x `P.cast` ()
+  lawMconcat (Cons x xs) = foldr mappend mempty (Cons x xs) `P.cast` ()
