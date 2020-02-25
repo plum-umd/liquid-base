@@ -1,10 +1,12 @@
 {-@ LIQUID "--reflection" @-}
 {-@ LIQUID "--ple" @-}
+{-@ LIQUID "--extensionality" @-}
 {-# LANGUAGE RankNTypes #-}
 module Data.Functor where
 
 import           Prelude                 hiding ( Functor(..)
                                                 , Applicative(..)
+                                                , Monad(..)
                                                 , id
                                                 )
 import           Data.Proxy
@@ -68,30 +70,30 @@ class (VFunctor f, Applicative f) => VApplicative f where
   lawApplicativeInterchange :: forall a b . f (a -> b) -> a -> ()
 
   
-{-@ data MyId a = MyId a @-}
-data MyId a = MyId a
+{-@ data Id a = Id a @-}
+data Id a = Id a
 
-instance Functor MyId where
-  fmap f (MyId i) = MyId (f i)
-  x <$ (MyId _) = MyId x
+instance Functor Id where
+  fmap f (Id i) = Id (f i)
+  x <$ (Id _) = Id x
 
-instance VFunctor MyId where
+instance VFunctor Id where
     lawFunctorId _ = ()
-    lawFunctorComposition f g (MyId x) = ()
+    lawFunctorComposition f g (Id x) = ()
 
   
-instance Applicative MyId where
-  pure = MyId
-  ap (MyId f) (MyId a) = MyId (f a)
-  liftA2 f (MyId a) (MyId b) = MyId (f a b)
+instance Applicative Id where
+  pure = Id
+  ap (Id f) (Id a) = Id (f a)
+  liftA2 f (Id a) (Id b) = Id (f a b)
   a1 *> a2 = ap (id' <$ a1) a2
   a1 <* a2 = liftA2 const' a1 a2
 
-instance VApplicative MyId where
+instance VApplicative Id where
   lawApplicativeId _ = ()
-  lawApplicativeComposition (MyId f) (MyId g) (MyId x) = ()
-  lawApplicativeHomomorphism f x (MyId y) = ()
-  lawApplicativeInterchange (MyId f) _ = ()
+  lawApplicativeComposition (Id f) (Id g) (Id x) = ()
+  lawApplicativeHomomorphism f x (Id y) = ()
+  lawApplicativeInterchange (Id f) _ = ()
 
 
 -- TODO: Define `Maybe a` in Data.Maybe
@@ -128,10 +130,105 @@ instance VApplicative Optional where
   lawApplicativeInterchange None _ = ()
   lawApplicativeInterchange (Has f) _ = ()
 
+class Applicative m => Monad m where
+  {-@ bind :: forall a b. m a -> (a -> m b) -> m b @-}
+  bind :: forall a b. m a -> (a -> m b) -> m b
+  return :: forall a. a -> m a
+  mseq :: forall a b. m a -> m b -> m b
+
+class (VApplicative m, Monad m) => VMonad m where
+  {-@ lawMonad1 :: forall a b. x:a -> f:(a -> m b) -> {f x == bind (return x) f} @-}
+  lawMonad1 :: forall a b. a -> (a -> m b) -> ()
+  {-@ lawMonad2 :: forall a. m:m a -> {bind m return == m }@-}
+  lawMonad2 :: forall a. m a -> ()
+  {-@ lawMonad3 :: forall a b c. m:m a -> f:(a -> m b) -> g:(b -> m c) -> {h:(y:a -> {v0:m c | v0 = bind (f y) g}) | True} -> {bind (bind m f) g == bind m h} @-}
+  lawMonad3 :: forall a b c. m a -> (a -> m b) -> (b -> m c) -> (a -> m c) -> ()
+  -- iff is buggy
+  {-@ lawMonadReturn :: forall a. x:a -> y:m a -> {((y == pure x) => (y == return x)) && ((y == return x) => (y == pure x)) } @-}
+  lawMonadReturn :: forall a. a -> m a -> ()
+  
+
+instance Monad Id where
+  bind (Id x) f = f x
+  return = Id
+  mseq  _ x = x
+
+instance VMonad Id where
+  lawMonad1 x f = ()
+  lawMonad2 (Id x) = ()
+  lawMonad3 (Id x) f g h = h x `cast` ()
+  lawMonadReturn _ _ = ()
 
 
+instance Monad Optional where
+  bind None _ = None
+  bind (Has x) f = f x
+  return = Has
+  mseq _ (Has x) = Has x
+  mseq _ None = None
 
--- Abstract proofs.
+instance VMonad Optional where
+  lawMonad1 x f = ()
+  lawMonad2 None = ()
+  lawMonad2 (Has x) = ()
+  lawMonad3 None f g h = ()
+  lawMonad3 (Has x) f g h = h x `cast` ()
+  lawMonadReturn _ _ = ()
+
+{-@ data State s a = State {runState :: s -> (a,s)} @-}
+data State s a = State {runState :: s -> (a,s)}
+
+
+{-@ reflect fmapState @-}
+fmapState :: (a -> b) -> (s -> (a,s)) -> s -> (b,s)
+fmapState f h s = let (a,s') = h s in (f a, s')
+
+{-@ fmapStateId :: f:(s -> (a,s)) -> s:s -> {fmapState id' f s == id' f s}  @-}
+fmapStateId :: (s -> (a,s)) -> s -> ()
+fmapStateId f s = 
+  let (a,s') = f s 
+      (a',s'') = fmapState id' f s in
+    id' a `cast` id' a' `cast` ()
+
+{-@ fmapStateId' :: f:(s -> (a,s)) -> {fmapState id' f == id' f}  @-}
+fmapStateId' :: (s -> (a,s)) -> ()
+fmapStateId' f = axiomExt (fmapState id' f) (id' f) (fmapStateId f) `cast`
+                 axiomExt (fmapState id' f) f (fmapStateId f) `cast`
+                 -- TODO extensionality not working
+                 undefined
+
+{-@ assume axiomExt :: f:_ -> g:_ -> (x:_ -> {f x == g x}) -> {f = g} @-}
+axiomExt :: (a -> b) -> (a -> b) -> (a -> Proof) -> Proof
+axiomExt _ _ _ = () 
+
+instance Functor (State s) where
+  fmap f (State g) = State (fmapState f g)
+  a <$ (State f) =
+    State $ \s ->
+      let (_, s') = f s
+       in (a, s')
+
+
+instance VFunctor (State s) where
+  lawFunctorId (State f) = fmapStateId' f
+  -- TODO: composition law could be messy
+  lawFunctorComposition f g (State h) = undefined
+
+
+-- Kleisli Arrow
+{-@ reflect kcompose @-}
+kcompose :: Monad m => (a -> m b) -> (b -> m c) -> (a -> m c)
+kcompose f g x = bind (f x) g
+
+{-@ kcomposeAssoc :: Monad m => f:(a -> m b) -> g:(b -> m c) -> h:(c -> m d) -> x:a -> {kcompose (kcompose f g) h x == kcompose f (kcompose g h) x} @-}
+kcomposeAssoc :: VMonad m => (a -> m b) -> (b -> m c) -> (c -> m d) -> a -> ()
+kcomposeAssoc f g h x = lawMonad3  (f x) g h (kcompose g h)
+
+-- Instantiation
+{-@ optionCompose :: f:(a -> Optional b) -> g:(b -> Optional c) -> h:(c -> Optional d) -> x:a -> {kcompose (kcompose f g) h x == kcompose f (kcompose g h) x} @-}
+optionCompose :: (a -> Optional b) -> (b -> Optional c) -> (c -> Optional d) -> a -> ()
+optionCompose  = kcomposeAssoc 
+
 
 -- -- TODO: Prove this
 -- {-@ applicativeLemma1 :: VApplicative m => f:(a -> b) -> x:m a -> {fmap f x == ap (pure f) x} @-}
