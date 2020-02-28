@@ -61,7 +61,30 @@ instance VMonoid PNat where
   lawEmpty (S m) = lawEmpty m
   lawMconcat _ = ()
 
--- -- Dual
+
+-- Lists
+
+instance Semigroup (List a) where
+  mappend Nil l2 = l2
+  mappend (Cons h l1) l2 = Cons h (mappend l1 l2)
+  sconcat (NonEmpty h t) = foldr mappend h t
+
+instance VSemigroup (List a) where
+  lawAssociative Nil y z = ()
+  lawAssociative (Cons _ x) y z = lawAssociative x y z
+  lawSconcat (NonEmpty h t) = ()
+
+instance Monoid (List a) where
+  mempty = Nil
+  mconcat xs = foldr mappend mempty xs
+
+instance VMonoid (List a) where
+  lawEmpty Nil = ()
+  lawEmpty (Cons _ t) = lawEmpty t
+  lawMconcat _ = ()
+
+
+-- Dual
 {-@ data Dual a = Dual {getDual :: a} @-}
 data Dual a = Dual {getDual :: a}
 
