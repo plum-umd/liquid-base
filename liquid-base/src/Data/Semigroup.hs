@@ -38,8 +38,6 @@ class (VSemigroup a, Monoid a) => VMonoid a where
 
     {-@ lawMconcat :: xs:List a -> {mconcat xs = foldr mappend mempty xs} @-}
     lawMconcat :: List a -> ()
-
-
 -- Natural Numbers
 data PNat = Z | S PNat
 
@@ -64,7 +62,17 @@ instance VMonoid PNat where
   lawMconcat _ = ()
 
 -- -- Dual
+{-@ data Dual a = Dual {getDual :: a} @-}
 data Dual a = Dual {getDual :: a}
+
+
+{-@ dualdualHom :: Semigroup a => x:a -> y:a -> {mappend (Dual (Dual x)) (Dual (Dual y)) == Dual (Dual (mappend x y))} @-}
+dualdualHom :: Semigroup a => a -> a -> ()
+dualdualHom _ _ = ()
+
+{-@ dualdualHom' :: Semigroup a => x:Dual (Dual a) -> y:Dual (Dual a) -> {getDual (getDual (mappend x y)) == mappend (getDual (getDual x)) (getDual (getDual y))} @-}
+dualdualHom' :: Semigroup a => Dual (Dual a) -> Dual (Dual a) -> ()
+dualdualHom' _ _ = ()
 
 instance Semigroup a => Semigroup (Dual a) where
   mappend (Dual v) (Dual v') = Dual (mappend v' v)
