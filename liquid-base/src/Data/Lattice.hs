@@ -75,7 +75,6 @@ meetCanFlowTo l1 l2 l3 = lawMeet l2 l3 l1 &&& unmeetCanFlowTo l1 l2 l3
  @-}
 unmeetCanFlowTo :: Lattice l => l -> l -> l -> ()
 unmeetCanFlowTo l1 l2 l3
-  -- = undefined
   =     lawMeet l2 l3 l1
     &&& lawFlowTransitivity l1 (l2 `meet` l3) l2
     &&& lawFlowTransitivity l1 (l2 `meet` l3) l3
