@@ -1,6 +1,5 @@
 {-@ LIQUID "--reflection" @-}
 {-@ LIQUID "--ple" @-}
-{-@ LIQUID "--extensionality" @-}
 {-# LANGUAGE RankNTypes #-}
 module Data.Functor where
 
@@ -11,6 +10,7 @@ import           Prelude                 hiding ( Functor(..)
                                                 )
 import           Data.Proxy
 import           Liquid.ProofCombinators
+import           Data.List
 
 -- TODO: Move these to a separate module. 
 {-@ reflect id' @-}
@@ -183,19 +183,26 @@ data State s a = State {runState :: s -> (a,s)}
 fmapState :: (a -> b) -> (s -> (a,s)) -> s -> (b,s)
 fmapState f h s = let (a,s') = h s in (f a, s')
 
-{-@ fmapStateId :: f:(s -> (a,s)) -> s:s -> {fmapState id' f s == id' f s}  @-}
-fmapStateId :: (s -> (a,s)) -> s -> ()
-fmapStateId f s = 
-  let (a,s') = f s 
-      (a',s'') = fmapState id' f s in
-    id' a `cast` id' a' `cast` ()
 
 {-@ fmapStateId' :: f:(s -> (a,s)) -> {fmapState id' f == id' f}  @-}
 fmapStateId' :: (s -> (a,s)) -> ()
-fmapStateId' f = axiomExt (fmapState id' f) (id' f) (fmapStateId f) `cast`
-                 axiomExt (fmapState id' f) f (fmapStateId f) `cast`
-                 -- TODO extensionality not working
-                 undefined
+fmapStateId' f = axiomExt (fmapState id' f) (id' f) $ \s ->
+  let (a,s') = f s 
+      (a',s'') = fmapState id' f s in
+    id' a `cast` id' a' `cast` ()
+  
+{-@ lawFunctorCompositionState :: f:(b -> c) -> g:(a -> b) -> x:(s -> (a,s)) -> {fmapState (compose f g) x == compose (fmapState f) (fmapState g) x} @-}
+lawFunctorCompositionState :: (b -> c) -> (a -> b) -> (s -> (a, s)) -> ()
+lawFunctorCompositionState f g x =
+  axiomExt (fmapState (compose f g) x) (compose (fmapState f) (fmapState g) x) $ \s ->
+    let (c, s') = fmapState (compose f g) x s
+        (c', s'') = compose (fmapState f) (fmapState g) x s
+        (a, s''') = x s
+    in ()
+
+
+      
+    
 
 {-@ assume axiomExt :: f:_ -> g:_ -> (x:_ -> {f x == g x}) -> {f = g} @-}
 axiomExt :: (a -> b) -> (a -> b) -> (a -> Proof) -> Proof
@@ -208,26 +215,64 @@ instance Functor (State s) where
       let (_, s') = f s
        in (a, s')
 
-
 instance VFunctor (State s) where
-  lawFunctorId (State f) = fmapStateId' f
+  lawFunctorId (State f) = fmapStateId' f `cast` ()
   -- TODO: composition law could be messy
-  lawFunctorComposition f g (State h) = undefined
+  lawFunctorComposition f g (State h) = lawFunctorCompositionState f g h `cast` ()
 
+
+instance Functor List where
+  fmap _ Nil = Nil
+  fmap f (Cons x xs) = Cons (f x) (fmap f xs)
+  y <$ Nil = Nil
+  y <$ (Cons x xs) = Cons y (y <$ xs)
+
+instance VFunctor List where  
+  lawFunctorId Nil = ()
+  lawFunctorId (Cons _ xs) = lawFunctorId xs
+  lawFunctorComposition _ _ Nil = ()
+  lawFunctorComposition f g (Cons _ xs) = lawFunctorComposition f g xs
+
+{-@ reflect appendL @-}
+appendL :: List a -> List a -> List a
+appendL Nil ys = Nil
+appendL (Cons x xs) ys = Cons x (appendL xs ys)
+
+
+instance Applicative List where
+  pure x = Cons x Nil
+  ap Nil _ = Nil
+  ap (Cons f fs) xs = fmap f xs `appendL` ap fs xs
+  liftA2 f x y = pure f `ap` x `ap` y
+  a1 *> a2 = ap (id' <$ a1) a2
+  a1 <* a2 = liftA2 const' a1 a2
+
+instance VApplicative List where
+  lawApplicativeId Nil = ()
+  lawApplicativeId (Cons x xs) = lawApplicativeId xs
+  lawApplicativeComposition Nil (Cons g gs) (Cons x xs) = ()
+  -- finishing up
+  lawApplicativeComposition (Cons f fs) (Cons g gs) (Cons x xs) = undefined
+    
+  lawApplicativeComposition _ _ _ = undefined
+  lawApplicativeHomomorphism f x Nil = ()
+  lawApplicativeHomomorphism f x (Cons y ys) = undefined
+  lawApplicativeInterchange Nil _ = ()
+  lawApplicativeInterchange (Cons y ys) _ = undefined
 
 -- Kleisli Arrow
 {-@ reflect kcompose @-}
 kcompose :: Monad m => (a -> m b) -> (b -> m c) -> (a -> m c)
 kcompose f g x = bind (f x) g
 
-{-@ kcomposeAssoc :: Monad m => f:(a -> m b) -> g:(b -> m c) -> h:(c -> m d) -> x:a -> {kcompose (kcompose f g) h x == kcompose f (kcompose g h) x} @-}
-kcomposeAssoc :: VMonad m => (a -> m b) -> (b -> m c) -> (c -> m d) -> a -> ()
-kcomposeAssoc f g h x = lawMonad3  (f x) g h (kcompose g h)
+-- {-@ kcomposeAssoc :: Monad m => f:(a -> m b) -> g:(b -> m c) -> h:(c -> m d) -> x:a -> {kcompose (kcompose f g) h x == kcompose f (kcompose g h) x} @-}
+-- kcomposeAssoc :: VMonad m => (a -> m b) -> (b -> m c) -> (c -> m d) -> a -> ()
+-- kcomposeAssoc f g h x = lawMonad3  (f x) g h (kcompose g h)
 
 -- Instantiation
-{-@ optionCompose :: f:(a -> Optional b) -> g:(b -> Optional c) -> h:(c -> Optional d) -> x:a -> {kcompose (kcompose f g) h x == kcompose f (kcompose g h) x} @-}
-optionCompose :: (a -> Optional b) -> (b -> Optional c) -> (c -> Optional d) -> a -> ()
-optionCompose  = kcomposeAssoc 
+-- {-@ optionCompose :: f:(a -> Optional b) -> g:(b -> Optional c) -> h:(c -> Optional d) -> x:a -> {kcompose (kcompose f g) h x == kcompose f (kcompose g h) x} @-}
+-- optionCompose :: (a -> Optional b) -> (b -> Optional c) -> (c -> Optional d) -> a -> ()
+-- optionCompose  = kcomposeAssoc 
 
 
 -- -- TODO: Prove this
