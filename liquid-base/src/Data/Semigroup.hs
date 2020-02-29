@@ -7,6 +7,7 @@ import           Prelude                 hiding ( Semigroup(..)
                                                 , foldr
                                                 , head
                                                 , tail
+                                                , Maybe (..)
                                                 )
 
 import           Data.List
@@ -23,7 +24,7 @@ class Semigroup a => VSemigroup a where
     {-@ lawAssociative :: v:a -> v':a -> v'':a -> {mappend (mappend v v') v'' == mappend v (mappend v' v'')} @-}
     lawAssociative :: a -> a -> a -> ()
 
-    {-@ lawSconcat :: ys:NonEmpty a -> {foldr mappend (NonEmpty.head' ys) (NonEmpty.tail' ys) == sconcat ys} @-}
+--    {-@ lawSconcat :: ys:NonEmpty a -> {foldr mappend (NonEmpty.head' ys) (NonEmpty.tail' ys) == sconcat ys} @-}
     lawSconcat :: NonEmpty a -> ()
 
 class Semigroup a => Monoid a where
@@ -112,4 +113,179 @@ instance VSemigroup a => VSemigroup (Dual a) where
 instance VMonoid a => VMonoid (Dual a) where
   lawEmpty (Dual v) = lawEmpty v
   lawMconcat xs = mconcat xs `P.cast` ()
+
+{-@ data Endo a = Endo {appEndo :: a -> a} @-}
+data Endo a = Endo {appEndo :: a -> a}
+
+{-@ reflect compose @-}
+compose :: (b -> c) -> (a -> b) -> a -> c
+compose f g x = f (g x)
+
+{-@ reflect id' @-}
+id' :: a -> a
+id' x = x
+
+instance Semigroup (Endo a) where
+  mappend (Endo f) (Endo g) = Endo (compose f g)
+  sconcat (NonEmpty h t) = foldr mappend h t
+
+
+{-@ assume axiomExt :: f:_ -> g:_ -> (x:_ -> {f x == g x}) -> {f = g} @-}
+axiomExt :: (a -> b) -> (a -> b) -> (a -> ()) -> ()
+axiomExt _ _ _ = () 
+
+
+{-@ composeAssoc :: f:(c -> d) -> g:(b -> c) -> h:(a -> b) -> { compose f (compose g h) == compose (compose f g) h  } @-}
+composeAssoc :: (c -> d) -> (b -> c) -> (a -> b) -> ()
+composeAssoc f g h = axiomExt (compose (compose f g) h) (compose f (compose g h)) $ \a ->
+  compose (compose f g) h a `P.cast`
+  f (g (h a)) `P.cast`
+  compose f (compose g h) a `P.cast`
+  ()
+
+{-@ composeId :: f:(a -> b) -> {compose id' f == f && compose f id' == f} @-}
+composeId :: (a -> b) -> ()
+composeId f = (axiomExt (compose id' f) f $ \x -> compose id' f x `P.cast` ()) `P.cast`
+              (axiomExt (compose f id') f $ \x -> compose f id' x `P.cast` ())
+
+instance VSemigroup (Endo a) where
+  lawAssociative (Endo f) (Endo g) (Endo h) = composeAssoc f g h `P.cast` ()
+  lawSconcat (NonEmpty h t) = sconcat (NonEmpty h t) `P.cast` ()
+
+instance Monoid (Endo a) where
+  mempty = Endo id'
+  mconcat = foldr mappend mempty
+
+instance VMonoid (Endo a) where
+  lawEmpty (Endo f) = composeId f
+  lawMconcat _ = ()
+
+
+data Any = Any {getAny :: Bool}
+data All = All {getAll :: Bool}
+
+instance Semigroup Any where
+  mappend (Any b) (Any b') = Any $ b || b'
+  sconcat (NonEmpty h t) = foldr mappend h t
+
+instance VSemigroup Any where
+  lawAssociative _ _ _ = ()
+  lawSconcat _ = ()
+
+instance Monoid Any where
+  mempty = Any False
+  mconcat = foldr mappend mempty
+
+instance VMonoid Any where
+  lawMconcat _ = ()
+  lawEmpty _ = ()
+
+instance Semigroup All where
+  mappend (All b) (All b') = All $ b && b'
+  sconcat (NonEmpty h t) = foldr mappend h t
+
+instance VSemigroup All where
+  lawAssociative _ _ _ = ()
+  lawSconcat _ = ()
+
+instance Monoid All where
+  mempty = All True
+  mconcat = foldr mappend mempty
+
+instance VMonoid All where
+  lawMconcat _ = ()
+  lawEmpty _ = ()
+
+data Sum a = Sum {getSum :: a}
+
+instance Num a => Semigroup (Sum a) where
+  mappend (Sum x) (Sum y) = Sum $ x + y
+  sconcat (NonEmpty h t) = foldr mappend h t
+
+instance Num a => VSemigroup (Sum a) where
+  lawAssociative _ _ _ = ()
+  lawSconcat _ = ()
+
+instance Num a => Monoid (Sum a) where
+  mempty = Sum 0
+  mconcat = foldr mappend mempty
+
+data Product a = Product {getProduct :: a}
+
+instance Num a => Semigroup (Product a) where
+  mappend (Product x) (Product y) = Product $ x * y
+  sconcat (NonEmpty h t) = foldr mappend h t
+
+instance Num a => VSemigroup (Product a) where
+  lawAssociative _ _ _ = ()
+  lawSconcat _ = ()
+
+instance Num a => Monoid (Product a) where
+  mempty = Product 1
+  mconcat = foldr mappend mempty
+
+{-@ data Maybe a = Nothing | Just a @-}
+data Maybe a = Nothing | Just a
+
+data First a = First {getFirst :: Maybe a}
+
+instance Semigroup (First a) where
+  First Nothing `mappend` b = b
+  a `mappend` _ = a
+  sconcat (NonEmpty h t) = foldr mappend h t
+
+instance VSemigroup (First a) where
+  lawAssociative _ _ _ = ()
+  lawSconcat _ = ()
+
+instance Monoid (First a) where
+  mempty = First Nothing
+  mconcat = foldr mappend mempty
+
+instance VMonoid (First a) where
+  lawEmpty (First Nothing) = ()
+  lawEmpty _ = ()
+  lawMconcat _ = ()
+
+data Last a = Last {getLast :: Maybe a}
+
+instance Semigroup (Last a) where
+  a `mappend` Last Nothing = a
+  _ `mappend` b = b
+  sconcat (NonEmpty h t) = foldr mappend h t
+
+instance VSemigroup (Last a) where
+  lawAssociative _ _ _ = ()
+  lawSconcat _ = ()
+
+instance Monoid (Last a) where
+  mempty = Last Nothing
+  mconcat = foldr mappend mempty
+
+instance VMonoid (Last a) where
+  lawEmpty (Last Nothing) = ()
+  lawEmpty _ = ()
+  lawMconcat _ = ()
+
+-- Dual First and Last are isomorphic
+instance Semigroup a => Semigroup (Maybe a) where
+  Nothing `mappend` b = b
+  a `mappend` Nothing = a
+  Just a `mappend` Just b = Just (a `mappend` b)
+  sconcat (NonEmpty h t) = foldr mappend h t
+  
+  
+instance Semigroup a => Monoid (Maybe a) where
+  mempty = Nothing
+  mconcat = foldr mappend mempty
+
+instance VSemigroup a => VSemigroup (Maybe a) where
+  lawAssociative (Just x) (Just y) (Just z) = lawAssociative x y z
+  lawAssociative _ _ _ = ()
+  lawSconcat _ = ()
+
+instance VMonoid a => VMonoid (Maybe a) where
+  lawMconcat xs = mconcat xs `P.cast` ()
+  lawEmpty Nothing = ()
+  lawEmpty (Just x) = lawEmpty x
 
