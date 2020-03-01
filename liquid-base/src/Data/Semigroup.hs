@@ -1,3 +1,4 @@
+{-# LANGUAGE RankNTypes #-}
 {-@ LIQUID "--reflection" @-}
 {-@ LIQUID "--ple" @-}
 module Data.Semigroup where
@@ -6,8 +7,10 @@ import           Prelude                 hiding ( Semigroup(..)
                                                 , Monoid(..)
                                                 , foldr
                                                 , head
+                                                , flip
                                                 , tail
                                                 , Maybe (..)
+                                                , Foldable (..)
                                                 )
 
 import           Data.List
@@ -85,7 +88,7 @@ instance VMonoid (List a) where
   lawMconcat _ = ()
 
 
--- Dual
+-- -- Dual
 {-@ data Dual a = Dual {getDual :: a} @-}
 data Dual a = Dual {getDual :: a}
 
@@ -164,7 +167,7 @@ instance VMonoid (Endo a) where
 data Any = Any {getAny :: Bool}
 data All = All {getAll :: Bool}
 
-instance Semigroup Any where
+instance Semigroup Any where --
   mappend (Any b) (Any b') = Any $ b || b'
   sconcat (NonEmpty h t) = foldr mappend h t
 
@@ -267,7 +270,7 @@ instance VMonoid (Last a) where
   lawEmpty _ = ()
   lawMconcat _ = ()
 
--- Dual First and Last are isomorphic
+-- -- Dual First and Last are isomorphic
 instance Semigroup a => Semigroup (Maybe a) where
   Nothing `mappend` b = b
   a `mappend` Nothing = a
@@ -288,4 +291,87 @@ instance VMonoid a => VMonoid (Maybe a) where
   lawMconcat xs = mconcat xs `P.cast` ()
   lawEmpty Nothing = ()
   lawEmpty (Just x) = lawEmpty x
+
+{-@ reflect flip @-}
+{-@ reflect composeEndo @-}
+composeEndo :: (b -> a -> a) -> b -> Endo a
+composeEndo f x = Endo (f x)
+
+flip :: (a -> b -> c) -> b -> a -> c
+flip f y x = f x y
+
+{-@ reflect dualEndoFlip @-}
+dualEndoFlip :: (a -> b -> a) -> b -> Dual (Endo a)
+dualEndoFlip f x  = Dual (Endo (flip f x))
+class Foldable t where
+  {-@ foldMap :: forall a m. Monoid m => (a -> m) -> t a -> m @-}
+  foldMap :: forall a m. Monoid m => (a -> m) -> t a -> m
+  foldr :: (a -> b -> b) -> b -> t a -> b
+--  foldl :: (b -> a -> b) -> b -> t a -> b
+
+class Foldable t => VFoldable t where
+  {-@ lawFoldable1 :: forall a b. f:(a -> b -> b) -> z:b -> t:t a -> {foldr f z t == appEndo (foldMap (composeEndo f) t ) z} @-}
+  lawFoldable1 :: forall a b . (a -> b -> b) -> b -> t a -> ()
+--  {-@ lawFoldable2 :: forall a b. f:(b -> a -> b) -> z:b -> t:t a -> {foldl f z t = appEndo (getDual (foldMap (dualEndoFlip f) t)) z} @-}
+--  lawFoldable2 :: forall a b. (b -> a -> b) -> b -> t a -> ()
+--  {-@ lawFoldable3 :: forall a b. f:(a -> b -> b) -> z:b -> t:t a -> {foldr' f z t = foldMap id' f z t} @-}
+--  lawFoldable3 :: forall a b . (a -> b -> b) -> b -> t a -> ()
+
+data Id a = Id a
+
+instance Foldable Maybe where
+  foldMap f Nothing = mempty
+  foldMap f (Just x) = f x
+  foldr f m Nothing = m
+  foldr f m (Just x) = f x m
+  -- foldl f m Nothing = m
+  -- foldl f m (Just x) = f m x
+
+instance VFoldable Maybe where
+  lawFoldable1 _ _ Nothing = ()
+  lawFoldable1 _ _ _ = ()
+  -- lawFoldable2 _ _ Nothing = ()
+  -- lawFoldable2 _ _ _ = ()
+
+instance Foldable Id where
+  foldMap f (Id a) = f a
+  foldr f m (Id a) = f a m
+
+instance VFoldable Id where
+  lawFoldable1 _ _ _ = ()
+
+data Const a b = Const {getConst :: a}
+
+instance Foldable (Const a) where
+  foldr f m _ = m
+  foldMap _ _ = mempty
+
+instance VFoldable (Const a) where
+  lawFoldable1 _ _ _ = ()
+
+data Complex a = Complex a a
+
+instance Foldable Complex where
+  foldMap f (Complex a b) = f a `mappend` f b
+  foldr f m (Complex a b) = f a (f b m)
+
+instance VFoldable Complex where
+  lawFoldable1 _ _ _ = ()
+
+instance Foldable List where
+  foldr f z Nil = z
+  foldr f z (Cons x xs) = f x (foldr f z xs)
+  foldMap f Nil = mempty
+  foldMap f (Cons x xs) = f x `mappend` foldMap f xs
+
+instance VFoldable List where
+  lawFoldable1 f z Nil  = ()
+  lawFoldable1 f z (Cons x xs) = lawFoldable1 f z xs `P.cast` ()
+
+
+
+
+  -- foldl f z Nil = z
+  -- foldl f z (Cons x xs) = foldl f (f z x) xs
+
 

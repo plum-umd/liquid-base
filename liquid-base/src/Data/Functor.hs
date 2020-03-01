@@ -15,7 +15,7 @@ import           Prelude                 hiding ( Functor(..)
                                                 , flip
                                                 )
 import           Liquid.ProofCombinators
-import           Data.List               hiding ( foldr )
+import           Data.List
 
 -- TODO: Move these to a separate module. 
 {-@ reflect id' @-}
@@ -307,18 +307,18 @@ class Semigroup a => VSemigroup a where
     lawAssociative :: a -> a -> a -> ()
 
 
-class Semigroup a => Monoid a where
-    {-@ mempty :: a @-}
-    mempty :: a
+-- class Semigroup a => Monoid a where
+--     {-@ mempty :: a @-}
+--     mempty :: a
 
-    mconcat :: List a -> a
+--     mconcat :: List a -> a
 
-class (VSemigroup a, Monoid a) => VMonoid a where
-    {-@ lawEmpty :: x:a -> {mappend x mempty == x && mappend mempty x == x} @-}
-    lawEmpty :: a -> () -- JP: Call this lawIdentity?
+-- class (VSemigroup a, Monoid a) => VMonoid a where
+--     {-@ lawEmpty :: x:a -> {mappend x mempty == x && mappend mempty x == x} @-}
+--     lawEmpty :: a -> () -- JP: Call this lawIdentity?
 
-    {-@ lawMconcat :: xs:List a -> {mconcat xs = Data.List.foldr mappend mempty xs} @-}
-    lawMconcat :: List a -> ()
+--     {-@ lawMconcat :: xs:List a -> {mconcat xs = Data.List.foldr mappend mempty xs} @-}
+--     lawMconcat :: List a -> ()
 
 {-@ data Pair a b = Pair {projl :: a, projr :: b }  @-}
 data Pair l r = Pair {projl :: l, projr :: r }
@@ -331,18 +331,18 @@ instance VFunctor (Pair u) where
   lawFunctorId (Pair _ _) = ()
   lawFunctorComposition _ _ _ = ()
 
-instance Monoid u => Applicative (Pair u) where
-  pure x = Pair mempty x
-  ap (Pair u f) (Pair v x) = (Pair (u `mappend` v) (f x))
-  liftA2 f x y = pure f `ap` x `ap` y
-  a1 *> a2 = ap (id' <$ a1) a2
-  a1 <* a2 = liftA2 const' a1 a2
+-- instance Monoid u => Applicative (Pair u) where
+--   pure x = Pair mempty x
+--   ap (Pair u f) (Pair v x) = (Pair (u `mappend` v) (f x))
+--   liftA2 f x y = pure f `ap` x `ap` y
+--   a1 *> a2 = ap (id' <$ a1) a2
+--   a1 <* a2 = liftA2 const' a1 a2
 
-instance Monoid u => Monad (Pair u) where
-  bind (Pair u a) k = case k a of
-    (Pair v b) -> (Pair (mappend u v) b)
-  return = pure
-  mseq (Pair u _) (Pair v a) = (Pair (mappend u v) a)
+-- instance Monoid u => Monad (Pair u) where
+--   bind (Pair u a) k = case k a of
+--     (Pair v b) -> (Pair (mappend u v) b)
+--   return = pure
+--   mseq (Pair u _) (Pair v a) = (Pair (mappend u v) a)
 
 
 {-@ data Either l r = Left l | Right r @-}
