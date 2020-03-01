@@ -224,13 +224,10 @@ axiomExt _ _ _ = ()
 --   lawFunctorComposition f g (State h) =
 --     lawFunctorCompositionState f g h `cast` ()
 
-{-@ reflect fmapList @-}
-fmapList :: (a -> b) -> List a -> List b
-fmapList _ Nil         = Nil
-fmapList f (Cons x xs) = Cons (f x) (fmapList f xs)
 
 instance Functor List where
-  fmap = fmapList
+  fmap _ Nil         = Nil
+  fmap f (Cons x xs) = Cons (f x) (fmap f xs)
   y <$ Nil         = Nil
   y <$ (Cons x xs) = Cons y (y <$ xs)
 
@@ -257,36 +254,29 @@ appendLAssoc (Cons _ xs) ys zs = appendLAssoc xs ys zs
 
 instance Applicative List where
   pure x = Cons x Nil
-  -- defined outside to break mutual dependency
-  -- since we only do the inlining for internal methods
-  ap = apList
+  ap Nil         _  = Nil
+  ap (Cons f fs) xs = fmap f xs `appendL` ap fs xs
   liftA2 f x y = pure f `ap` x `ap` y
   a1 *> a2 = ap (id' <$ a1) a2
   a1 <* a2 = liftA2 const' a1 a2
 
-{-@ reflect apList @-}
-apList :: List (a -> b) -> List a -> List b
-apList Nil         _  = Nil
-apList (Cons f fs) xs = fmapList f xs `appendL` apList fs xs
+{-@ apDistrib :: f:List (a -> b) -> g:List (a -> b) -> xs:List a -> {ap (appendL f g) xs == appendL (ap f xs) (ap g xs)}  @-}
+apDistrib :: List (a -> b) -> List (a -> b) -> List a -> ()
+apDistrib Nil _ _ = ()
+apDistrib fs@(Cons f fs') gs xs =
+  apDistrib fs' gs xs `cast` appendLAssoc (fmap f xs) (ap fs' xs) (ap gs xs)
 
-{-@ apListDistrib :: f:List (a -> b) -> g:List (a -> b) -> xs:List a -> {apList (appendL f g) xs == appendL (apList f xs) (apList g xs)}  @-}
-apListDistrib :: List (a -> b) -> List (a -> b) -> List a -> ()
-apListDistrib Nil _ _ = ()
-apListDistrib fs@(Cons f fs') gs xs =
-  apListDistrib fs' gs xs
-    `cast` appendLAssoc (fmapList f xs) (apList fs' xs) (apList gs xs)
-
-{-@ fmapResAppend :: f:(a -> b) -> xs:List a -> ys:List a -> {fmapList f (appendL xs ys) == appendL (fmapList f xs) (fmapList f ys)} @-}
+{-@ fmapResAppend :: f:(a -> b) -> xs:List a -> ys:List a -> {fmap f (appendL xs ys) == appendL (fmap f xs) (fmap f ys)} @-}
 fmapResAppend :: (a -> b) -> List a -> List a -> ()
 fmapResAppend f Nil         ys = ()
 fmapResAppend f (Cons _ xs) ys = fmapResAppend f xs ys
 
 --  {-@ lawApplicativeComposition :: forall a b c . u:f (b -> c) -> v:f (a -> b) -> w:f a -> {ap (ap (ap (pure compose) u) v) w = ap u (ap v w)} @-}
-{-@ lawfListList :: f:(b -> c) -> gs: List (a -> b) -> as:List a -> {fmap f (apList gs as) == apList (fmap (compose f) gs) as } @-}
+{-@ lawfListList :: f:(b -> c) -> gs: List (a -> b) -> as:List a -> {fmap f (ap gs as) == ap (fmap (compose f) gs) as } @-}
 lawfListList :: (b -> c) -> List (a -> b) -> List a -> ()
 lawfListList f Nil xs = ()
 lawfListList f (Cons g gs) xs =
-  fmapResAppend f (fmap g xs) (apList gs xs)
+  fmapResAppend f (fmap g xs) (ap gs xs)
     `cast` lawfListList f gs xs
     `cast` lawFunctorComposition f g xs
 
@@ -297,7 +287,7 @@ instance VApplicative List where
   lawApplicativeComposition Nil (Cons g gs) (Cons x xs) = ()
   lawApplicativeComposition (Cons f fs) v w =
     appendLNil (fmap compose (Cons f fs))
-      `cast` apListDistrib (fmap (compose f) v) (ap (fmap compose fs) v) w
+      `cast` apDistrib (fmap (compose f) v) (ap (fmap compose fs) v) w
       `cast` lawApplicativeComposition fs v w
       `cast` lawfListList f v w
       `cast` ()
@@ -310,6 +300,51 @@ instance VApplicative List where
       `cast` appendLNil (fmap (flip apply y) us)
       `cast` appendLNil (fmap (flip apply y) (Cons u us))
       `cast` ()
+
+instance Monad List where
+  bind Nil         f = Nil
+  bind (Cons x xs) f = f x `appendL` bind xs f
+  return = pure
+  mseq Nil         _  = Nil
+  mseq (Cons _ xs) ys = ys `appendL` mseq xs ys
+
+{-@ listBindDistrib :: xs:List a -> ys:List a -> f:(a -> List b) -> {appendL (bind xs f) (bind ys f) == bind (appendL xs ys) f} @-}
+listBindDistrib :: List a -> List a -> (a -> List b) -> ()
+listBindDistrib (Cons x xs) ys f =
+  appendLAssoc (f x) (bind xs f) (bind ys f) `cast` listBindDistrib xs ys f
+listBindDistrib _ _ _ = ()
+instance VMonad List where
+  lawMonad1 x f = appendLNil (f x)
+  lawMonad2 Nil         = ()
+  lawMonad2 (Cons _ xs) = lawMonad2 xs
+  lawMonad3 Nil f g h = ()
+  lawMonad3 (Cons x xs) f g h =
+    listBindDistrib (f x) (bind xs f) g
+      `cast` lawMonad3 xs f g h
+      `cast` h x
+      `cast` ()
+  lawMonadReturn _ _ = ()
+
+  -- {-@ lawMonad1 :: forall a b. x:a -> f:(a -> m b) -> {f x == bind (return x) f} @-}
+  -- lawMonad1 :: forall a b. a -> (a -> m b) -> ()
+  -- {-@ lawMonad2 :: forall a. m:m a -> {bind m return == m }@-}
+  -- lawMonad2 :: forall a. m a -> ()
+  -- {-@ lawMonad3 :: forall a b c. m:m a -> f:(a -> m b) -> g:(b -> m c) -> {h:(y:a -> {v0:m c | v0 = bind (f y) g}) | True} -> {bind (bind m f) g == bind m h} @-}
+  -- lawMonad3 :: forall a b c. m a -> (a -> m b) -> (b -> m c) -> (a -> m c) -> ()
+  -- -- iff is buggy
+  -- {-@ lawMonadReturn :: forall a. x:a -> y:m a -> {((y == pure x) => (y == return x)) && ((y == return x) => (y == pure x)) } @-}
+  -- lawMonadReturn :: forall a. a -> m a -> ()
+
+-- instance Monad Id where
+--   bind (Id x) f = f x
+--   return = Id
+--   mseq  _ x = x
+
+-- instance VMonad Id where
+--   lawMonad1 x f = ()
+--   lawMonad2 (Id x) = ()
+--   lawMonad3 (Id x) f g h = h x `cast` ()
+--   lawMonadReturn _ _ = ()
 
 -- Kleisli Arrow
 {-@ reflect kcompose @-}
