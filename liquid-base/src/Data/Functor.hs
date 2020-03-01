@@ -1,6 +1,7 @@
 {-@ LIQUID "--reflection" @-}
 {-@ LIQUID "--ple" @-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 module Data.Functor where
 
 import           Prelude                 hiding ( Functor(..)
@@ -96,137 +97,140 @@ class (VApplicative m, Monad m) => VMonad m where
 {-@ data Id a = Id a @-}
 data Id a = Id a
 
-instance Functor Id where
-  fmap f (Id i) = Id (f i)
-  x <$ (Id _) = Id x
+-- instance Functor Id where
+--   fmap f (Id i) = Id (f i)
+--   x <$ (Id _) = Id x
 
-instance VFunctor Id where
-    lawFunctorId _ = ()
-    lawFunctorComposition f g (Id x) = ()
+-- instance VFunctor Id where
+--     lawFunctorId _ = ()
+--     lawFunctorComposition f g (Id x) = ()
 
 
-instance Applicative Id where
-  pure = Id
-  ap (Id f) (Id a) = Id (f a)
-  liftA2 f (Id a) (Id b) = Id (f a b)
-  a1 *> a2 = ap (id' <$ a1) a2
-  a1 <* a2 = liftA2 const' a1 a2
+-- instance Applicative Id where
+--   pure = Id
+--   ap (Id f) (Id a) = Id (f a)
+--   liftA2 f (Id a) (Id b) = Id (f a b)
+--   a1 *> a2 = ap (id' <$ a1) a2
+--   a1 <* a2 = liftA2 const' a1 a2
 
-instance VApplicative Id where
-  lawApplicativeId _ = ()
-  lawApplicativeComposition (Id f) (Id g) (Id x) = ()
-  lawApplicativeHomomorphism f x (Id y) = ()
-  lawApplicativeInterchange (Id f) _ = ()
+-- instance VApplicative Id where
+--   lawApplicativeId _ = ()
+--   lawApplicativeComposition (Id f) (Id g) (Id x) = ()
+--   lawApplicativeHomomorphism f x (Id y) = ()
+--   lawApplicativeInterchange (Id f) _ = ()
 
 
 -- TODO: Define `Maybe a` in Data.Maybe
 data Maybe a = Nothing | Just a
 
-instance Functor Maybe where
-  fmap _ Nothing = Nothing
-  fmap f (Just x) = Just (f x)
-  _ <$ Nothing = Nothing
-  x <$ (Just _) = Just x
+-- instance Functor Maybe where
+--   fmap _ Nothing = Nothing
+--   fmap f (Just x) = Just (f x)
+--   _ <$ Nothing = Nothing
+--   x <$ (Just _) = Just x
 
-instance VFunctor Maybe where
-    lawFunctorId x = ()
-    lawFunctorComposition f g Nothing = ()
-    lawFunctorComposition f g (Just x) = ()
+-- instance VFunctor Maybe where
+--     lawFunctorId x = ()
+--     lawFunctorComposition f g Nothing = ()
+--     lawFunctorComposition f g (Just x) = ()
 
-instance Applicative Maybe where
-  pure = Just
-  ap Nothing _ = Nothing
-  ap _ Nothing = Nothing
-  ap (Just f) (Just x) = Just (f x)
-  liftA2 f (Just a) (Just b) = Just (f a b)
-  liftA2 f _       _       = Nothing
-  a1 *> a2 = ap (id' <$ a1) a2
-  a1 <* a2 = liftA2 const' a1 a2
+-- instance Applicative Maybe where
+--   pure = Just
+--   ap Nothing _ = Nothing
+--   ap _ Nothing = Nothing
+--   ap (Just f) (Just x) = Just (f x)
+--   liftA2 f (Just a) (Just b) = Just (f a b)
+--   liftA2 f _       _       = Nothing
+--   a1 *> a2 = ap (id' <$ a1) a2
+--   a1 <* a2 = liftA2 const' a1 a2
 
-instance VApplicative Maybe where
-  lawApplicativeId Nothing = ()
-  lawApplicativeId (Just x) = ap (pure id') (Just x) `cast` ()
-  lawApplicativeComposition (Just f) (Just g) (Just x) = ()
-  lawApplicativeComposition _ _ _ = ()
-  lawApplicativeHomomorphism f x (Just y) = ()
-  lawApplicativeHomomorphism f x Nothing = ()
-  lawApplicativeInterchange Nothing _ = ()
-  lawApplicativeInterchange (Just f) _ = ()
-
-
-instance Monad Maybe where
-  bind Nothing _ = Nothing
-  bind (Just x) f = f x
-  return = Just
-  mseq _ (Just x) = Just x
-  mseq _ Nothing = Nothing
-
-instance VMonad Maybe where
-  lawMonad1 x f = ()
-  lawMonad2 Nothing = ()
-  lawMonad2 (Just x) = ()
-  lawMonad3 Nothing f g h = ()
-  lawMonad3 (Just x) f g h = h x `cast` ()
-  lawMonadReturn _ _ = ()
+-- instance VApplicative Maybe where
+--   lawApplicativeId Nothing = ()
+--   lawApplicativeId (Just x) = ap (pure id') (Just x) `cast` ()
+--   lawApplicativeComposition (Just f) (Just g) (Just x) = ()
+--   lawApplicativeComposition _ _ _ = ()
+--   lawApplicativeHomomorphism f x (Just y) = ()
+--   lawApplicativeHomomorphism f x Nothing = ()
+--   lawApplicativeInterchange Nothing _ = ()
+--   lawApplicativeInterchange (Just f) _ = ()
 
 
+-- instance Monad Maybe where
+--   bind Nothing _ = Nothing
+--   bind (Just x) f = f x
+--   return = Just
+--   mseq _ (Just x) = Just x
+--   mseq _ Nothing = Nothing
 
-instance Monad Id where
-  bind (Id x) f = f x
-  return = Id
-  mseq  _ x = x
-
-instance VMonad Id where
-  lawMonad1 x f = ()
-  lawMonad2 (Id x) = ()
-  lawMonad3 (Id x) f g h = h x `cast` ()
-  lawMonadReturn _ _ = ()
+-- instance VMonad Maybe where
+--   lawMonad1 x f = ()
+--   lawMonad2 Nothing = ()
+--   lawMonad2 (Just x) = ()
+--   lawMonad3 Nothing f g h = ()
+--   lawMonad3 (Just x) f g h = h x `cast` ()
+--   lawMonadReturn _ _ = ()
 
 
 
-{-@ data State s a = State {runState :: s -> (a,s)} @-}
-data State s a = State {runState :: s -> (a,s)}
+-- instance Monad Id where
+--   bind (Id x) f = f x
+--   return = Id
+--   mseq  _ x = x
+
+-- instance VMonad Id where
+--   lawMonad1 x f = ()
+--   lawMonad2 (Id x) = ()
+--   lawMonad3 (Id x) f g h = h x `cast` ()
+--   lawMonadReturn _ _ = ()
 
 
-{-@ reflect fmapState @-}
-fmapState :: (a -> b) -> (s -> (a, s)) -> s -> (b, s)
-fmapState f h s = let (a, s') = h s in (f a, s')
+
+-- {-@ data State s a = State {runState :: s -> (a,s)} @-}
+-- data State s a = State {runState :: s -> (a,s)}
 
 
-{-@ fmapStateId' :: f:(s -> (a,s)) -> {fmapState id' f == id' f}  @-}
-fmapStateId' :: (s -> (a, s)) -> ()
-fmapStateId' f = axiomExt (fmapState id' f) (id' f) $ \s ->
-  let (a , s' ) = f s
-      (a', s'') = fmapState id' f s
-  in  id' a `cast` id' a' `cast` ()
+-- {-@ reflect fmapState @-}
+-- fmapState :: (a -> b) -> (s -> (a, s)) -> s -> (b, s)
+-- fmapState f h s = let (a, s') = h s in (f a, s')
 
-{-@ lawFunctorCompositionState :: f:(b -> c) -> g:(a -> b) -> x:(s -> (a,s)) -> {fmapState (compose f g) x == compose (fmapState f) (fmapState g) x} @-}
-lawFunctorCompositionState :: (b -> c) -> (a -> b) -> (s -> (a, s)) -> ()
-lawFunctorCompositionState f g x =
-  axiomExt (fmapState (compose f g) x) (compose (fmapState f) (fmapState g) x)
-    $ \s ->
-        let (c , s'  ) = fmapState (compose f g) x s
-            (c', s'' ) = compose (fmapState f) (fmapState g) x s
-            (a , s''') = x s
-        in  ()
+
+-- {-@ fmapStateId' :: f:(s -> (a,s)) -> {fmapState id' f == id' f}  @-}
+-- fmapStateId' :: (s -> (a, s)) -> ()
+-- fmapStateId' f = axiomExt (fmapState id' f) (id' f) $ \s ->
+--   let (a , s' ) = f s
+--       (a', s'') = fmapState id' f s
+--   in  id' a `cast` id' a' `cast` ()
+
+-- {-@ lawFunctorCompositionState :: f:(b -> c) -> g:(a -> b) -> x:(s -> (a,s)) -> {fmapState (compose f g) x == compose (fmapState f) (fmapState g) x} @-}
+-- lawFunctorCompositionState :: (b -> c) -> (a -> b) -> (s -> (a, s)) -> ()
+-- lawFunctorCompositionState f g x =
+--   axiomExt (fmapState (compose f g) x) (compose (fmapState f) (fmapState g) x)
+--     $ \s ->
+--         let (c , s'  ) = fmapState (compose f g) x s
+--             (c', s'' ) = compose (fmapState f) (fmapState g) x s
+--             (a , s''') = x s
+--         in  ()
 
 {-@ assume axiomExt :: f:_ -> g:_ -> (x:_ -> {f x == g x}) -> {f = g} @-}
 axiomExt :: (a -> b) -> (a -> b) -> (a -> Proof) -> Proof
 axiomExt _ _ _ = ()
 
-instance Functor (State s) where
-  fmap f (State g) = State (fmapState f g)
-  a <$ (State f) = State $ \s -> let (_, s') = f s in (a, s')
+-- instance Functor (State s) where
+--   fmap f (State g) = State (fmapState f g)
+--   a <$ (State f) = State $ \s -> let (_, s') = f s in (a, s')
 
-instance VFunctor (State s) where
-  lawFunctorId (State f) = fmapStateId' f `cast` ()
-  lawFunctorComposition f g (State h) =
-    lawFunctorCompositionState f g h `cast` ()
+-- instance VFunctor (State s) where
+--   lawFunctorId (State f) = fmapStateId' f `cast` ()
+--   lawFunctorComposition f g (State h) =
+--     lawFunctorCompositionState f g h `cast` ()
 
+{-@ reflect fmapList @-}
+fmapList :: (a -> b) -> List a -> List b
+fmapList _ Nil         = Nil
+fmapList f (Cons x xs) = Cons (f x) (fmapList f xs)
 
 instance Functor List where
-  fmap _ Nil         = Nil
-  fmap f (Cons x xs) = Cons (f x) (fmap f xs)
+  fmap = fmapList
   y <$ Nil         = Nil
   y <$ (Cons x xs) = Cons y (y <$ xs)
 
@@ -246,24 +250,51 @@ appendLNil :: List a -> ()
 appendLNil Nil         = ()
 appendLNil (Cons x xs) = appendLNil xs
 
+{-@ appendLAssoc :: xs:List a -> ys:List a -> zs:List a -> {appendL (appendL xs ys) zs == appendL xs (appendL ys zs)} @-}
+appendLAssoc :: List a -> List a -> List a -> ()
+appendLAssoc Nil         _  _  = ()
+appendLAssoc (Cons _ xs) ys zs = appendLAssoc xs ys zs
+
 instance Applicative List where
   pure x = Cons x Nil
-  ap Nil         _  = Nil
-  ap (Cons f fs) xs = fmap f xs `appendL` ap fs xs
+  -- defined outside to break mutual dependency
+  -- since we only do the inlining for internal methods
+  ap = apList
   liftA2 f x y = pure f `ap` x `ap` y
   a1 *> a2 = ap (id' <$ a1) a2
   a1 <* a2 = liftA2 const' a1 a2
 
+{-@ reflect apList @-}
+apList :: List (a -> b) -> List a -> List b
+apList Nil         _  = Nil
+apList (Cons f fs) xs = fmapList f xs `appendL` apList fs xs
+
+{-@ apListDistrib :: f:List (a -> b) -> g:List (a -> b) -> xs:List a -> {apList (appendL f g) xs == appendL (apList f xs) (apList g xs)}  @-}
+apListDistrib :: List (a -> b) -> List (a -> b) -> List a -> ()
+apListDistrib Nil _ _ = ()
+apListDistrib fs@(Cons f fs') gs xs =
+  apListDistrib fs' gs xs
+    `cast` appendLAssoc (fmapList f xs) (apList fs' xs) (apList gs xs)
+
+
+--  {-@ lawApplicativeComposition :: forall a b c . u:f (b -> c) -> v:f (a -> b) -> w:f a -> {ap (ap (ap (pure compose) u) v) w = ap u (ap v w)} @-}
+{-@ lawfListList :: f:(b -> c) -> gs: List (a -> b) -> as:List a -> {fmap f (apList gs as) == apList (fmap (compose f) gs) as } @-}
+lawfListList :: (b -> c) -> List (a -> b) -> List a -> ()
+lawfListList f Nil         xs = ()
+lawfListList f (Cons _ gs) xs = lawfListList f gs xs
+
 instance VApplicative List where
   lawApplicativeId Nil         = ()
   lawApplicativeId (Cons x xs) = lawApplicativeId xs
-  lawApplicativeComposition Nil         (  Cons g gs) (  Cons x xs) = ()
+  lawApplicativeComposition Nil (Cons g gs) (Cons x xs) = ()
   -- finishing up
 
-  lawApplicativeComposition (Cons f fs) v@(Cons g gs) w@(Cons x xs) = undefined
-    -- pure :: a -> [a]
-    -- ap :: [a -> b] -> 
-    -- ap (ap (ap (pure compose) (Cons f fs) ) v) w  `cast`
+  lawApplicativeComposition (Cons f fs) v w =
+    appendLNil (fmap compose (Cons f fs))
+      `cast` apListDistrib (fmap (compose f) v) (ap (fmap compose fs) v) w
+      `cast` lawApplicativeComposition fs v w
+      `cast` lawfListList f v w
+      `cast` ()
     -- ap (ap (ap (Cons compose Nil) (Cons f fs) ) v) w `cast`
     -- -- (ap (Cons compose Nil) (Cons f fs) )
     -- appendL (fmap compose (Cons f fs)) (ap Nil xs) `cast`
@@ -280,7 +311,7 @@ instance VApplicative List where
     -- lawApplicativeComposition fs gs xs `cast`
     -- ()
 
-  lawApplicativeComposition _           _             _             = ()
+  lawApplicativeComposition _ _ _ = ()
   lawApplicativeHomomorphism f x Nil         = ()
   lawApplicativeHomomorphism f x (Cons y ys) = undefined
   lawApplicativeInterchange Nil         _ = ()
@@ -296,29 +327,6 @@ kcompose f g x = bind (f x) g
 
 
 
-
-
-class Semigroup a where
-    {-@ mappend :: a -> a -> a @-}
-    mappend :: a -> a -> a
-
-class Semigroup a => VSemigroup a where
-    {-@ lawAssociative :: v:a -> v':a -> v'':a -> {mappend (mappend v v') v'' == mappend v (mappend v' v'')} @-}
-    lawAssociative :: a -> a -> a -> ()
-
-
--- class Semigroup a => Monoid a where
---     {-@ mempty :: a @-}
---     mempty :: a
-
---     mconcat :: List a -> a
-
--- class (VSemigroup a, Monoid a) => VMonoid a where
---     {-@ lawEmpty :: x:a -> {mappend x mempty == x && mappend mempty x == x} @-}
---     lawEmpty :: a -> () -- JP: Call this lawIdentity?
-
---     {-@ lawMconcat :: xs:List a -> {mconcat xs = Data.List.foldr mappend mempty xs} @-}
---     lawMconcat :: List a -> ()
 
 {-@ data Pair a b = Pair {projl :: a, projr :: b }  @-}
 data Pair l r = Pair {projl :: l, projr :: r }
@@ -345,140 +353,140 @@ instance VFunctor (Pair u) where
 --   mseq (Pair u _) (Pair v a) = (Pair (mappend u v) a)
 
 
-{-@ data Either l r = Left l | Right r @-}
-data Either l r = Left l | Right r
-instance Functor (Either l) where
-  fmap f (Right x) = Right (f x)
-  fmap f (Left x) = Left x
-  x <$ (Right _) = Right x
-  _ <$ (Left x)  = Left x
+-- {-@ data Either l r = Left l | Right r @-}
+-- data Either l r = Left l | Right r
+-- instance Functor (Either l) where
+--   fmap f (Right x) = Right (f x)
+--   fmap f (Left x) = Left x
+--   x <$ (Right _) = Right x
+--   _ <$ (Left x)  = Left x
 
-instance VFunctor (Either l) where
-  lawFunctorId (Left _) = ()
-  lawFunctorId _ = ()
-  lawFunctorComposition _ _ _ = ()
+-- instance VFunctor (Either l) where
+--   lawFunctorId (Left _) = ()
+--   lawFunctorId _ = ()
+--   lawFunctorComposition _ _ _ = ()
 
-instance Applicative (Either l) where
-  pure = Right 
-  ap (Right f) (Right x) = Right (f x)
-  ap (Right f) (Left x)  = Left x
-  ap (Left x) _ = Left x
+-- instance Applicative (Either l) where
+--   pure = Right 
+--   ap (Right f) (Right x) = Right (f x)
+--   ap (Right f) (Left x)  = Left x
+--   ap (Left x) _ = Left x
 
-  liftA2 f x y = pure f `ap` x `ap` y
-  a1 *> a2 = ap (id' <$ a1) a2
-  a1 <* a2 = liftA2 const' a1 a2
+--   liftA2 f x y = pure f `ap` x `ap` y
+--   a1 *> a2 = ap (id' <$ a1) a2
+--   a1 <* a2 = liftA2 const' a1 a2
 
-instance VApplicative (Either l) where
-  lawApplicativeId (Left _) = ()
-  lawApplicativeId _ = ()
-  lawApplicativeComposition (Right _) (Right _) (Right _)  = ()
-  lawApplicativeComposition _ _ _  = ()
-  lawApplicativeHomomorphism f x (Left _) = ()
-  lawApplicativeHomomorphism f x _ = ()
-  lawApplicativeInterchange (Left _) _ = ()
-  lawApplicativeInterchange (Right _) _ = ()
+-- instance VApplicative (Either l) where
+--   lawApplicativeId (Left _) = ()
+--   lawApplicativeId _ = ()
+--   lawApplicativeComposition (Right _) (Right _) (Right _)  = ()
+--   lawApplicativeComposition _ _ _  = ()
+--   lawApplicativeHomomorphism f x (Left _) = ()
+--   lawApplicativeHomomorphism f x _ = ()
+--   lawApplicativeInterchange (Left _) _ = ()
+--   lawApplicativeInterchange (Right _) _ = ()
 
-instance Monad (Either l) where
-  return = Right
-  bind (Right x) f = f x
-  bind (Left x) f = Left x
-  mseq (Right _) (Right x) = Right x
-  mseq (Left x) _ = Left x
-  mseq (Right _) (Left x) = Left x
+-- instance Monad (Either l) where
+--   return = Right
+--   bind (Right x) f = f x
+--   bind (Left x) f = Left x
+--   mseq (Right _) (Right x) = Right x
+--   mseq (Left x) _ = Left x
+--   mseq (Right _) (Left x) = Left x
 
-instance VMonad (Either l) where
-  lawMonad1 x f = ()
-  lawMonad2 (Left _) = ()
-  lawMonad2 _ = ()
-  lawMonad3 (Right x) f g h = h x `cast` ()
-  lawMonad3 _ _ _ _ = ()
-  lawMonadReturn _ _ = ()
+-- instance VMonad (Either l) where
+--   lawMonad1 x f = ()
+--   lawMonad2 (Left _) = ()
+--   lawMonad2 _ = ()
+--   lawMonad3 (Right x) f g h = h x `cast` ()
+--   lawMonad3 _ _ _ _ = ()
+--   lawMonadReturn _ _ = ()
 
-data Const a b = Const {getConst :: a}
+-- data Const a b = Const {getConst :: a}
 
-instance Functor (Const m) where
-  fmap _ (Const v) = Const v
-  _ <$ (Const v) = Const v
+-- instance Functor (Const m) where
+--   fmap _ (Const v) = Const v
+--   _ <$ (Const v) = Const v
 
-instance VFunctor (Const m) where
-  lawFunctorId (Const v) = ()
-  lawFunctorComposition _ _ _ = ()
+-- instance VFunctor (Const m) where
+--   lawFunctorId (Const v) = ()
+--   lawFunctorComposition _ _ _ = ()
 
-data Reader r a = Reader {runReader :: r -> a}
-{-@ reflect fmapReader @-}
-fmapReader :: (a -> b) -> (r -> a) -> r -> b
-fmapReader f x r = f (x r)
+-- data Reader r a = Reader {runReader :: r -> a}
+-- {-@ reflect fmapReader @-}
+-- fmapReader :: (a -> b) -> (r -> a) -> r -> b
+-- fmapReader f x r = f (x r)
 
-instance Functor (Reader r) where
-  fmap f (Reader x) = Reader (fmapReader f x)
-  (<$) a _ = Reader $ \r -> a
+-- instance Functor (Reader r) where
+--   fmap f (Reader x) = Reader (fmapReader f x)
+--   (<$) a _ = Reader $ \r -> a
 
-{-@ fmapReaderId' :: f:(r -> a) -> {fmapReader id' f == id' f}  @-}
-fmapReaderId' :: (r -> a) -> ()
-fmapReaderId' f =
-  axiomExt (fmapReader id' f) (id' f) $ \r -> fmapReader id' f r `cast` ()
+-- {-@ fmapReaderId' :: f:(r -> a) -> {fmapReader id' f == id' f}  @-}
+-- fmapReaderId' :: (r -> a) -> ()
+-- fmapReaderId' f =
+--   axiomExt (fmapReader id' f) (id' f) $ \r -> fmapReader id' f r `cast` ()
 
-{-@ lawFunctorCompositionReader :: f:(b -> c) -> g:(a -> b) -> x:(r -> a) -> {fmapReader (compose f g) x == compose (fmapReader f) (fmapReader g) x} @-}
-lawFunctorCompositionReader :: (b -> c) -> (a -> b) -> (r -> a) -> ()
-lawFunctorCompositionReader f g x =
-  axiomExt (fmapReader (compose f g) x)
-           (compose (fmapReader f) (fmapReader g) x)
-    $ \s ->
-        let c   = fmapReader (compose f g) x s
-            c'  = compose (fmapReader f) (fmapReader g) x s
-            c'' = x s
-        in  ()
+-- {-@ lawFunctorCompositionReader :: f:(b -> c) -> g:(a -> b) -> x:(r -> a) -> {fmapReader (compose f g) x == compose (fmapReader f) (fmapReader g) x} @-}
+-- lawFunctorCompositionReader :: (b -> c) -> (a -> b) -> (r -> a) -> ()
+-- lawFunctorCompositionReader f g x =
+--   axiomExt (fmapReader (compose f g) x)
+--            (compose (fmapReader f) (fmapReader g) x)
+--     $ \s ->
+--         let c   = fmapReader (compose f g) x s
+--             c'  = compose (fmapReader f) (fmapReader g) x s
+--             c'' = x s
+--         in  ()
 
-instance VFunctor (Reader r) where
-  lawFunctorId (Reader f) = fmapReaderId' f
-  lawFunctorComposition f g (Reader x) = lawFunctorCompositionReader f g x
+-- instance VFunctor (Reader r) where
+--   lawFunctorId (Reader f) = fmapReaderId' f
+--   lawFunctorComposition f g (Reader x) = lawFunctorCompositionReader f g x
 
 
--- Reader
-{-@ reflect apReader @-}
-apReader :: (r -> a -> b) -> (r -> a) -> r -> b
-apReader f x r = f r (x r)
+-- -- Reader
+-- {-@ reflect apReader @-}
+-- apReader :: (r -> a -> b) -> (r -> a) -> r -> b
+-- apReader f x r = f r (x r)
 
-instance Applicative (Reader r) where
-  pure x = Reader (const' x)
-  ap (Reader f) (Reader a) = Reader (apReader f a)
-  liftA2 f x y = pure f `ap` x `ap` y
-  a1 *> a2 = ap (id' <$ a1) a2
-  a1 <* a2 = liftA2 const' a1 a2
+-- instance Applicative (Reader r) where
+--   pure x = Reader (const' x)
+--   ap (Reader f) (Reader a) = Reader (apReader f a)
+--   liftA2 f x y = pure f `ap` x `ap` y
+--   a1 *> a2 = ap (id' <$ a1) a2
+--   a1 <* a2 = liftA2 const' a1 a2
 
-{-@ lawApplicativeIdReader :: v:(r -> a) -> r:r -> {apReader (const' id') v r == v r } @-}
-lawApplicativeIdReader :: (r -> a) -> r -> ()
-lawApplicativeIdReader v x = apReader (const' id') v x `cast` ()
+-- {-@ lawApplicativeIdReader :: v:(r -> a) -> r:r -> {apReader (const' id') v r == v r } @-}
+-- lawApplicativeIdReader :: (r -> a) -> r -> ()
+-- lawApplicativeIdReader v x = apReader (const' id') v x `cast` ()
 
-{-@ lawApplicativeCompositionReader :: u: (r -> b -> c) -> v: (r -> a -> b) -> w: (r -> a) -> r:r ->  {apReader (apReader (apReader (const' compose) u) v) w r = apReader u (apReader v w) r} @-}
-lawApplicativeCompositionReader
-  :: (r -> b -> c) -> (r -> a -> b) -> (r -> a) -> r -> ()
-lawApplicativeCompositionReader u v w r = ()
+-- {-@ lawApplicativeCompositionReader :: u: (r -> b -> c) -> v: (r -> a -> b) -> w: (r -> a) -> r:r ->  {apReader (apReader (apReader (const' compose) u) v) w r = apReader u (apReader v w) r} @-}
+-- lawApplicativeCompositionReader
+--   :: (r -> b -> c) -> (r -> a -> b) -> (r -> a) -> r -> ()
+-- lawApplicativeCompositionReader u v w r = ()
 
-{-@ lawApplicativeHomomorphismReader :: g:(a -> b) -> x:a -> {px: (r -> a) | px = const' x} -> r:r -> {apReader (const' g) px r = const' (g x) r} @-}
-lawApplicativeHomomorphismReader :: (a -> b) -> a -> (r -> a) -> r -> ()
-lawApplicativeHomomorphismReader g x px r =
-  const' x r `cast` apReader (const' g) px r `cast` px r `cast` ()
+-- {-@ lawApplicativeHomomorphismReader :: g:(a -> b) -> x:a -> {px: (r -> a) | px = const' x} -> r:r -> {apReader (const' g) px r = const' (g x) r} @-}
+-- lawApplicativeHomomorphismReader :: (a -> b) -> a -> (r -> a) -> r -> ()
+-- lawApplicativeHomomorphismReader g x px r =
+--   const' x r `cast` apReader (const' g) px r `cast` px r `cast` ()
 
-{-@ lawApplicativeInterchangeReader :: u: (r -> a -> b) -> y:a -> r:r -> {apReader u (const' y) r = apReader (const' (flip apply y)) u r} @-}
-lawApplicativeInterchangeReader :: (r -> a -> b) -> a -> r -> ()
-lawApplicativeInterchangeReader u y r = ()
+-- {-@ lawApplicativeInterchangeReader :: u: (r -> a -> b) -> y:a -> r:r -> {apReader u (const' y) r = apReader (const' (flip apply y)) u r} @-}
+-- lawApplicativeInterchangeReader :: (r -> a -> b) -> a -> r -> ()
+-- lawApplicativeInterchangeReader u y r = ()
 
-instance VApplicative (Reader r) where
-  lawApplicativeId (Reader v) =
-    axiomExt (apReader (const' id') v) v (lawApplicativeIdReader v)
-  lawApplicativeComposition (Reader u) (Reader v) (Reader w) = axiomExt
-    (apReader (apReader (apReader (const' compose) u) v) w)
-    (apReader u (apReader v w))
-    (lawApplicativeCompositionReader u v w)
-  lawApplicativeHomomorphism g x (Reader px) = axiomExt
-    (apReader (const' g) px)
-    (const' (g x))
-    (lawApplicativeHomomorphismReader g x px)
-  lawApplicativeInterchange (Reader u) y = axiomExt
-    (apReader u (const' y))
-    (apReader (const' (flip apply y)) u)
-    (lawApplicativeInterchangeReader u y)
+-- instance VApplicative (Reader r) where
+--   lawApplicativeId (Reader v) =
+--     axiomExt (apReader (const' id') v) v (lawApplicativeIdReader v)
+--   lawApplicativeComposition (Reader u) (Reader v) (Reader w) = axiomExt
+--     (apReader (apReader (apReader (const' compose) u) v) w)
+--     (apReader u (apReader v w))
+--     (lawApplicativeCompositionReader u v w)
+--   lawApplicativeHomomorphism g x (Reader px) = axiomExt
+--     (apReader (const' g) px)
+--     (const' (g x))
+--     (lawApplicativeHomomorphismReader g x px)
+--   lawApplicativeInterchange (Reader u) y = axiomExt
+--     (apReader u (const' y))
+--     (apReader (const' (flip apply y)) u)
+--     (lawApplicativeInterchangeReader u y)
 
 
 
@@ -495,11 +503,26 @@ instance VApplicative (Reader r) where
 
 
 
+-- data Compose f g a = Compose {getCompose :: f (g a)}
 
+-- instance (Functor f, Functor g) => Functor (Compose f g) where
+--   fmap f (Compose x) = Compose $ fmap (fmap f) x
+--   x <$ m = fmap (const' x) m
 
+-- instance (VFunctor f, VFunctor g) => VFunctor (Compose f g) where
+-- --    {-@ lawFunctorId :: forall a . x:m a -> {fmap id' x == id' x} @-}
+--   lawFunctorId (Compose x) =
+--     (axiomExt (fmap id' :: g a -> g a) id' $ \x -> ()) `cast`
+--     fmap id' (Compose x) `cast`
+--     fmap (fmap id') x `cast`
+--     lawFunctorId x `cast`
+--     ()
+--   lawFunctorComposition f g (Compose x) =
+--     fmap (fmap (compose f g)) x `cast`
+--     ()
 
-
-
+--    {-@ lawFunctorComposition :: forall a b c . f:(b -> c) -> g:(a -> b) -> x:m a -> { fmap (compose f g) x == compose (fmap f) (fmap g) x } @-}
+--    lawFunctorComposition :: forall a b c. (b -> c) -> (a -> b) -> m a -> ()
 
 
 

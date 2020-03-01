@@ -367,11 +367,3 @@ instance Foldable List where
 instance VFoldable List where
   lawFoldable1 f z Nil  = ()
   lawFoldable1 f z (Cons x xs) = lawFoldable1 f z xs `P.cast` ()
-
-
-
-
-  -- foldl f z Nil = z
-  -- foldl f z (Cons x xs) = foldl f (f z x) xs
-
-
