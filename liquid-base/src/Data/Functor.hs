@@ -242,7 +242,7 @@ instance VFunctor List where
 
 {-@ reflect appendL @-}
 appendL :: List a -> List a -> List a
-appendL Nil         ys = Nil
+appendL Nil         ys = ys
 appendL (Cons x xs) ys = Cons x (appendL xs ys)
 
 {-@ appendLNil :: xs:List a -> {appendL xs Nil == xs} @-}
@@ -276,56 +276,45 @@ apListDistrib fs@(Cons f fs') gs xs =
   apListDistrib fs' gs xs
     `cast` appendLAssoc (fmapList f xs) (apList fs' xs) (apList gs xs)
 
+{-@ fmapResAppend :: f:(a -> b) -> xs:List a -> ys:List a -> {fmapList f (appendL xs ys) == appendL (fmapList f xs) (fmapList f ys)} @-}
+fmapResAppend :: (a -> b) -> List a -> List a -> ()
+fmapResAppend f Nil         ys = ()
+fmapResAppend f (Cons _ xs) ys = fmapResAppend f xs ys
 
 --  {-@ lawApplicativeComposition :: forall a b c . u:f (b -> c) -> v:f (a -> b) -> w:f a -> {ap (ap (ap (pure compose) u) v) w = ap u (ap v w)} @-}
 {-@ lawfListList :: f:(b -> c) -> gs: List (a -> b) -> as:List a -> {fmap f (apList gs as) == apList (fmap (compose f) gs) as } @-}
 lawfListList :: (b -> c) -> List (a -> b) -> List a -> ()
-lawfListList f Nil         xs = ()
-lawfListList f (Cons _ gs) xs = lawfListList f gs xs
+lawfListList f Nil xs = ()
+lawfListList f (Cons g gs) xs =
+  fmapResAppend f (fmap g xs) (apList gs xs)
+    `cast` lawfListList f gs xs
+    `cast` lawFunctorComposition f g xs
 
 instance VApplicative List where
   lawApplicativeId Nil         = ()
   lawApplicativeId (Cons x xs) = lawApplicativeId xs
-  lawApplicativeComposition Nil (Cons g gs) (Cons x xs) = ()
-  -- finishing up
 
+  lawApplicativeComposition Nil (Cons g gs) (Cons x xs) = ()
   lawApplicativeComposition (Cons f fs) v w =
     appendLNil (fmap compose (Cons f fs))
       `cast` apListDistrib (fmap (compose f) v) (ap (fmap compose fs) v) w
       `cast` lawApplicativeComposition fs v w
       `cast` lawfListList f v w
       `cast` ()
-    -- ap (ap (ap (Cons compose Nil) (Cons f fs) ) v) w `cast`
-    -- -- (ap (Cons compose Nil) (Cons f fs) )
-    -- appendL (fmap compose (Cons f fs)) (ap Nil xs) `cast`
-    -- fmap compose (Cons f fs) `cast`
-    -- appendLNil (fmap compose (Cons f fs)) `cast`
-    -- ap (ap (fmap compose (Cons f fs)) v) w `cast`
-    -- ap (ap (Cons (compose f) (fmap compose fs)) v) w `cast`
-    -- (fmap (compose f) v `appendL` ap (fmap compose fs) v) `cast`
-    -- (fmap (compose f) (Cons g gs) `appendL` ap (fmap compose fs) (Cons g gs))  `cast`
-    -- (Cons (compose f g) (fmap (compose f) gs)) `appendL` ap (fmap compose fs) v `cast`
-
-    -- ((Cons (compose f g) (fmap (compose f) gs)) `appendL`
-    --  ap (fmap compose fs) v) `cast`
-    -- lawApplicativeComposition fs gs xs `cast`
-    -- ()
 
   lawApplicativeComposition _ _ _ = ()
-  lawApplicativeHomomorphism f x Nil         = ()
-  lawApplicativeHomomorphism f x (Cons y ys) = undefined
-  lawApplicativeInterchange Nil         _ = ()
-  lawApplicativeInterchange (Cons y ys) _ = undefined
-
-
-
+  lawApplicativeHomomorphism f x _ = appendLNil (fmap f (Cons x Nil))
+  lawApplicativeInterchange Nil _ = ()
+  lawApplicativeInterchange (Cons u us) y =
+    lawApplicativeInterchange us y
+      `cast` appendLNil (fmap (flip apply y) us)
+      `cast` appendLNil (fmap (flip apply y) (Cons u us))
+      `cast` ()
 
 -- Kleisli Arrow
 {-@ reflect kcompose @-}
 kcompose :: Monad m => (a -> m b) -> (b -> m c) -> (a -> m c)
 kcompose f g x = bind (f x) g
-
-
 
 
 {-@ data Pair a b = Pair {projl :: a, projr :: b }  @-}
