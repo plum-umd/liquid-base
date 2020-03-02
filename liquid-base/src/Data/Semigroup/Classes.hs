@@ -18,7 +18,6 @@ import           Data.List
 import           Data.List.NonEmpty
 
 
-
 class Semigroup a where
     {-@ mappend :: a -> a -> a @-}
     mappend :: a -> a -> a

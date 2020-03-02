@@ -16,7 +16,7 @@ import           Prelude                 hiding ( Functor(..)
                                                 , const
                                                 , apply
                                                 )
-import           Liquid.ProofCombinators
+import Liquid.ProofCombinators
 import Data.Function
 import Data.Maybe
 import Data.Functor.Classes
