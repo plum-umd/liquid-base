@@ -1,3 +1,5 @@
+{-@ LIQUID "--reflection" @-}
+
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE TypeFamilies          #-}
@@ -35,7 +37,7 @@ module Liquid.ProofCombinators (
   , isAdmit
   , cast
 
-
+  , axiomExt
 ) where
 
 -------------------------------------------------------------------------------
@@ -190,3 +192,6 @@ impossible _ = undefined
 
 
 
+{-@ assume axiomExt :: f:(a -> b) -> g:(a -> b) -> (x:a -> {f x == g x}) -> {f = g} @-}
+axiomExt :: (a -> b) -> (a -> b) -> (a -> ()) -> ()
+axiomExt _ _ _ = () 
