@@ -372,41 +372,24 @@ trivialEq1 _ _ _ =()
 
 instance VApplicative Succs where
   lawApplicativeId (Succs x xs)  = lawFunctorId xs `cast` ()
-  lawApplicativeComposition fall@(Succs f fs) gall@(Succs g gs) xall@(Succs x xs) =
+  lawApplicativeComposition fall@(Succs f fs) gall@(Succs g gs) xall@(Succs x xs) = undefined
     fmapResAppend (flip apply x) (fmap (flip apply g) (fmap compose fs)) (fmap (compose f) gs) `cast`
     lawFunctorComposition f g xs`cast`
-    -- Succs (compose f g x) ((fmap (flip apply x) (fmap (flip apply g) (fmap compose fs)) `appendL`
-    --                        fmap (flip apply x) (fmap (compose f) gs)) `appendL`
-    --                        fmap (compose f g) xs) `cast`
-    
     appendLAssoc (fmap (flip apply x) (fmap (flip apply g) (fmap compose fs)))
       (fmap (flip apply x) (fmap (compose f) gs))
       (fmap (compose f g) xs) `cast`
-    -- (fmap (compose (flip apply x) (compose (flip apply g) compose)))
-
     lawFunctorComposition (flip apply x) (compose (flip apply g) compose) fs `cast`
     lawFunctorComposition (flip apply g) compose fs `cast`
     fmapFGEq (compose (flip apply x) (compose (flip apply g) compose)) (flip apply (g x))  fs (trivialEq0 x g) `cast`
-    -- (fmap (compose (flip apply x) (compose (flip apply g) compose)) fs ==! fmap (flip apply (g x)) fs) `cast`
-    -- (fmap (flip apply x) (fmap (flip apply g) (fmap compose fs)) ==!  fmap (flip apply (g x)) fs) `cast`
-
     lawFunctorComposition (flip apply x) (compose f) gs `cast`
     lawFunctorComposition f (flip apply x) gs `cast`
-    -- works:
-    -- (fmap (compose (flip apply x) (compose f)) gs ==! fmap f (fmap (flip apply x) gs)) `cast`
-
-    -- try this
     fmapFGEq (compose (flip apply x) (compose f)) (compose f (flip apply x))   gs (trivialEq1 x f) `cast`
-    (fmap (compose (flip apply x) (compose f)) gs === fmap (compose f (flip apply x)) gs) `cast`
-
-
-    -- (fmap (flip apply x) (fmap (compose f) gs) ==! fmap f (fmap (flip apply x) gs)) `cast`
-    -- (fmap (flip apply x) (fmap (compose f) gs) ==! fmap (compose f (flip apply x)) gs) `cast`
-    
+    (fmap (compose (flip apply x) (compose f)) gs ===
+     fmap (compose f (flip apply x)) gs) `cast`
     fmapResAppend f (fmap (flip apply x) gs) (fmap g xs) `cast`
     ()
-  lawApplicativeHomomorphism _ _ _ = ()
-  lawApplicativeInterchange _ _ = ()
+  lawApplicativeHomomorphism g  x (Succs y Nil) = ()
+  lawApplicativeInterchange (Succs f fs) y = appendLNil (fmap (flip apply y) fs) `cast` ()
   
 -- Kleisli Arrow
 {-@ reflect kcompose @-}
