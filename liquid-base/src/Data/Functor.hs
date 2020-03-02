@@ -370,6 +370,13 @@ trivialEq0 _ _ _ = ()
 trivialEq1 :: a -> (b -> c) -> (a -> b) -> ()
 trivialEq1 _ _ _ =()
 
+-- instance VApplicative Succs where
+--   lawApplicativeId _ = undefined
+--   lawApplicativeComposition _ _ _ = undefined
+--   lawApplicativeHomomorphism f x _ = undefined
+--   lawApplicativeInterchange _ _ = undefined
+
+
 instance VApplicative Succs where
   lawApplicativeId (Succs x xs)  = lawFunctorId xs `cast` ()
   lawApplicativeComposition fall@(Succs f fs) gall@(Succs g gs) xall@(Succs x xs) = undefined
