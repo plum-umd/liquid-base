@@ -313,6 +313,7 @@ listBindDistrib :: List a -> List a -> (a -> List b) -> ()
 listBindDistrib (Cons x xs) ys f =
   appendLAssoc (f x) (bind xs f) (bind ys f) `cast` listBindDistrib xs ys f
 listBindDistrib _ _ _ = ()
+
 instance VMonad List where
   lawMonad1 x f = appendLNil (f x)
   lawMonad2 Nil         = ()
@@ -325,27 +326,88 @@ instance VMonad List where
       `cast` ()
   lawMonadReturn _ _ = ()
 
-  -- {-@ lawMonad1 :: forall a b. x:a -> f:(a -> m b) -> {f x == bind (return x) f} @-}
-  -- lawMonad1 :: forall a b. a -> (a -> m b) -> ()
-  -- {-@ lawMonad2 :: forall a. m:m a -> {bind m return == m }@-}
-  -- lawMonad2 :: forall a. m a -> ()
-  -- {-@ lawMonad3 :: forall a b c. m:m a -> f:(a -> m b) -> g:(b -> m c) -> {h:(y:a -> {v0:m c | v0 = bind (f y) g}) | True} -> {bind (bind m f) g == bind m h} @-}
-  -- lawMonad3 :: forall a b c. m a -> (a -> m b) -> (b -> m c) -> (a -> m c) -> ()
-  -- -- iff is buggy
-  -- {-@ lawMonadReturn :: forall a. x:a -> y:m a -> {((y == pure x) => (y == return x)) && ((y == return x) => (y == pure x)) } @-}
-  -- lawMonadReturn :: forall a. a -> m a -> ()
 
--- instance Monad Id where
---   bind (Id x) f = f x
---   return = Id
---   mseq  _ x = x
+-- This is the last one
+data Succs a = Succs a (List a)
 
--- instance VMonad Id where
---   lawMonad1 x f = ()
---   lawMonad2 (Id x) = ()
---   lawMonad3 (Id x) f g h = h x `cast` ()
---   lawMonadReturn _ _ = ()
+instance Functor Succs where
+  fmap f (Succs o s) = Succs (f o) (fmap f s)
+  y <$ (Succs _ s) = Succs y  (y <$ s)
 
+instance VFunctor Succs where
+  lawFunctorId (Succs _ xs) = lawFunctorId xs
+  lawFunctorComposition f g (Succs _ xs)    = lawFunctorComposition f g  xs
+
+instance Applicative Succs where
+  pure x = Succs x Nil
+  -- fmap (flip apply x) fs == ap fs (pure x)
+  -- Succs (f x) (ap fs (pure x) `appendL` fmap f xs)
+  ap (Succs f fs) (Succs x xs) = Succs (f x) (fmap (flip apply x) fs `appendL` fmap f xs)
+  -- ap (Succs f fs) (Succs x xs) = Succs (f x) (fmap (flip apply x) fs `appendL` fmap f xs)
+  -- ap Nil         _  = Nil
+  -- ap (Cons f fs) xs = fmap f xs `appendL` ap fs xs
+
+  liftA2 f x y = pure f `ap` x `ap` y
+  a1 *> a2 = ap (id' <$ a1) a2
+  a1 <* a2 = liftA2 const' a1 a2
+
+--  {-@ lawApplicativeId :: forall a . v:f a -> {ap (pure id') v = v} @-}
+--  {-@ lawApplicativeComposition :: forall a b c . u:f (b -> c) -> v:f (a -> b) -> w:f a -> {ap (ap (ap (pure compose) u) v) w = ap u (ap v w)} @-}
+--  {-@ lawApplicativeHomomorphism :: forall a b . g:(a -> b) -> x:a -> {px:f a | px = pure x} -> {ap (pure g) px = pure (g x)} @-}
+--  {-@ lawApplicativeInterchange :: forall a b . u:f (a -> b) -> y:a -> {ap u (pure y) = ap (pure (flip apply y)) u} @-}
+
+{-@ fmapFGEq :: f:(a -> b) -> g:(a -> b) -> xs:List a -> (x:a -> {f x == g x}) -> {fmap f xs == fmap g xs} @-}
+fmapFGEq :: (a -> b) -> (a -> b) -> List a -> (a -> ()) -> ()
+fmapFGEq f g Nil h = ()
+fmapFGEq f g (Cons x xs) h = h x `cast` fmapFGEq f g xs h
+
+
+{-@ trivialEq0 :: x:a -> g:(a -> b) -> f:(b -> c) -> {compose (flip apply x) (compose (flip apply g) compose) f == flip apply (g x) f} @-}
+trivialEq0 :: a -> (a -> b) -> (b -> c) -> ()
+trivialEq0 _ _ _ = ()
+
+{-@ trivialEq1 :: x:a -> f:(b -> c) -> g:(a -> b) -> {compose (flip apply x) (compose f) g == compose f (flip apply x) g} @-}
+trivialEq1 :: a -> (b -> c) -> (a -> b) -> ()
+trivialEq1 _ _ _ =()
+
+instance VApplicative Succs where
+  lawApplicativeId (Succs x xs)  = lawFunctorId xs `cast` ()
+  lawApplicativeComposition fall@(Succs f fs) gall@(Succs g gs) xall@(Succs x xs) =
+    fmapResAppend (flip apply x) (fmap (flip apply g) (fmap compose fs)) (fmap (compose f) gs) `cast`
+    lawFunctorComposition f g xs`cast`
+    -- Succs (compose f g x) ((fmap (flip apply x) (fmap (flip apply g) (fmap compose fs)) `appendL`
+    --                        fmap (flip apply x) (fmap (compose f) gs)) `appendL`
+    --                        fmap (compose f g) xs) `cast`
+    
+    appendLAssoc (fmap (flip apply x) (fmap (flip apply g) (fmap compose fs)))
+      (fmap (flip apply x) (fmap (compose f) gs))
+      (fmap (compose f g) xs) `cast`
+    -- (fmap (compose (flip apply x) (compose (flip apply g) compose)))
+
+    lawFunctorComposition (flip apply x) (compose (flip apply g) compose) fs `cast`
+    lawFunctorComposition (flip apply g) compose fs `cast`
+    fmapFGEq (compose (flip apply x) (compose (flip apply g) compose)) (flip apply (g x))  fs (trivialEq0 x g) `cast`
+    -- (fmap (compose (flip apply x) (compose (flip apply g) compose)) fs ==! fmap (flip apply (g x)) fs) `cast`
+    -- (fmap (flip apply x) (fmap (flip apply g) (fmap compose fs)) ==!  fmap (flip apply (g x)) fs) `cast`
+
+    lawFunctorComposition (flip apply x) (compose f) gs `cast`
+    lawFunctorComposition f (flip apply x) gs `cast`
+    -- works:
+    -- (fmap (compose (flip apply x) (compose f)) gs ==! fmap f (fmap (flip apply x) gs)) `cast`
+
+    -- try this
+    fmapFGEq (compose (flip apply x) (compose f)) (compose f (flip apply x))   gs (trivialEq1 x f) `cast`
+    (fmap (compose (flip apply x) (compose f)) gs === fmap (compose f (flip apply x)) gs) `cast`
+
+
+    -- (fmap (flip apply x) (fmap (compose f) gs) ==! fmap f (fmap (flip apply x) gs)) `cast`
+    -- (fmap (flip apply x) (fmap (compose f) gs) ==! fmap (compose f (flip apply x)) gs) `cast`
+    
+    fmapResAppend f (fmap (flip apply x) gs) (fmap g xs) `cast`
+    ()
+  lawApplicativeHomomorphism _ _ _ = ()
+  lawApplicativeInterchange _ _ = ()
+  
 -- Kleisli Arrow
 {-@ reflect kcompose @-}
 kcompose :: Monad m => (a -> m b) -> (b -> m c) -> (a -> m c)
