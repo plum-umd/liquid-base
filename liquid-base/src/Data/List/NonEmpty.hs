@@ -9,6 +9,7 @@ import           Prelude                 hiding ( foldr
 
 import           Data.List
 
+{-@ data NonEmpty a = NonEmpty {neh::a, net:: (List a)} @-}
 data NonEmpty a = NonEmpty a (List a)
 
 {-@ reflect head' @-}

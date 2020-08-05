@@ -1,5 +1,6 @@
 {-@ LIQUID "--reflection" @-}
 {-@ LIQUID "--ple" @-}
+{-@ LIQUID "--aux-inline" @-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 module Data.Either.Functor where
@@ -30,7 +31,8 @@ instance Functor (Either l) where
 instance VFunctor (Either l) where
   lawFunctorId (Left _) = ()
   lawFunctorId _ = ()
-  lawFunctorComposition _ _ _ = ()
+  lawFunctorComposition _ _ (Left _) = ()
+  lawFunctorComposition _ _ (Right _) = ()
 
 instance Applicative (Either l) where
   pure = Right 

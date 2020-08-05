@@ -1,4 +1,5 @@
 {-@ LIQUID "--reflection" @-}
+{-@ LIQUID "--aux-inline" @-}
 {-@ LIQUID "--ple" @-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}

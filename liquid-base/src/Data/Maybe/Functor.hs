@@ -1,4 +1,5 @@
 {-@ LIQUID "--reflection" @-}
+{-@ LIQUID "--aux-inline" @-}
 {-@ LIQUID "--ple" @-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -28,7 +29,8 @@ instance Functor Maybe where
   x <$ (Just _) = Just x
 
 instance VFunctor Maybe where
-    lawFunctorId x = ()
+    lawFunctorId Nothing = ()
+    lawFunctorId (Just _) = ()
     lawFunctorComposition f g Nothing = ()
     lawFunctorComposition f g (Just x) = ()
 

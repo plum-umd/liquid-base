@@ -1,5 +1,6 @@
 {-# LANGUAGE RankNTypes #-}
 {-@ LIQUID "--reflection" @-}
+{-@ LIQUID "--aux-inline" @-}
 {-@ LIQUID "--ple" @-}
 
 

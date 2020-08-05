@@ -8,6 +8,7 @@ import Prelude hiding (id)
 
 import Data.Function
 
+{-@ data List a = Nil | Cons {lh::a, lt::List a} @-}
 data List a = Nil | Cons a (List a)
 
 {-@ reflect foldrList @-}

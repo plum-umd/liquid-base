@@ -1,7 +1,8 @@
 {-# LANGUAGE RankNTypes #-}
 {-@ LIQUID "--reflection" @-}
+{-@ LIQUID "--aux-inline" @-}
 {-@ LIQUID "--ple" @-}
-
+{-@ LIQUID "--noadt" @-}
 
 module Data.List.Foldable where
 import           Prelude                 hiding ( Semigroup(..)
@@ -52,6 +53,9 @@ instance Monoid (Endo a) where
   mempty = Endo id
   mconcat = foldrList mappend mempty
 
+{-@ lemmaAppEndo :: f:(a -> a) -> g:Endo a -> z:a -> {appEndo (mappend (Endo f) g) z = f (appEndo g z)} @-}
+lemmaAppEndo :: (a -> a) -> Endo a -> a -> ()
+lemmaAppEndo f (Endo g) z = ()
 
 instance Foldable List where
   foldr f z Nil = z
@@ -61,4 +65,7 @@ instance Foldable List where
 
 instance VFoldable List where
   lawFoldable1 f z Nil  = ()
-  lawFoldable1 f z (Cons x xs) = lawFoldable1 f z xs `cast` ()
+  lawFoldable1 f z (Cons x xs) =
+    lawFoldable1 f z xs `cast`
+    lemmaAppEndo (f x) (foldMap (composeEndo f) xs) z  `cast`
+    ()
