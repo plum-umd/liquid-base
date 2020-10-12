@@ -43,8 +43,8 @@ instance Functor Succs where
   y <$ (Succs _ s) = Succs y  (fmapList (const y) s)
 
 instance VFunctor Succs where
-  lawFunctorId (Succs _ xs) = fmapListId xs
-  lawFunctorComposition f g (Succs _ xs)    = fmapListComposition f g  xs
+  lawFunctorId (Succs _ xs) = fmapListId xs `cast` ()
+  lawFunctorComposition f g (Succs _ xs)    = fmapListComposition f g  xs `cast` ()
 
 instance Applicative Succs where
   pure x = Succs x Nil

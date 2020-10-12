@@ -39,6 +39,6 @@ instance Monoid (Endo a) where
   mconcat = foldrList mappend mempty
 
 instance VMonoid (Endo a) where
-  lawEmpty (Endo f) = composeId f
+  lawEmpty (Endo f) = composeId f `cast` ()
   lawMconcat _ = ()
 

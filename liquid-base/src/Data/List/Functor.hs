@@ -88,7 +88,7 @@ instance VApplicative List where
       `cast` ()
 
   lawApplicativeComposition _ _ _ = ()
-  lawApplicativeHomomorphism f x _ = appendLNil (fmap f (Cons x Nil))
+  lawApplicativeHomomorphism f x _ = appendLNil (fmap f (Cons x Nil)) `cast` ()
   lawApplicativeInterchange Nil _ = ()
   lawApplicativeInterchange (Cons u us) y =
     lawApplicativeInterchange us y
@@ -105,9 +105,9 @@ instance Monad List where
 
 
 instance VMonad List where
-  lawMonad1 x f = appendLNil (f x)
+  lawMonad1 x f = appendLNil (f x) `cast` ()
   lawMonad2 Nil         = ()
-  lawMonad2 (Cons _ xs) = lawMonad2 xs
+  lawMonad2 (Cons _ xs) = lawMonad2 xs `cast` ()
   lawMonad3 Nil f g h = ()
   lawMonad3 (Cons x xs) f g h =
     listBindDistrib (f x) (bind xs f) g

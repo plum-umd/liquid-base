@@ -74,8 +74,8 @@ instance Functor (Reader r) where
   (<$) a _ = Reader $ \r -> a
 
 instance VFunctor (Reader r) where
-  lawFunctorId (Reader f) = fmapReaderId f
-  lawFunctorComposition f g (Reader x) = lawFunctorCompositionReader f g x
+  lawFunctorId (Reader f) = fmapReaderId f `cast` ()
+  lawFunctorComposition f g (Reader x) = lawFunctorCompositionReader f g x `cast` ()
 
 
 instance Applicative (Reader r) where
@@ -87,16 +87,16 @@ instance Applicative (Reader r) where
 
 instance VApplicative (Reader r) where
   lawApplicativeId (Reader v) =
-    axiomExt (apReader (const id) v) v (lawApplicativeIdReader v)
+    axiomExt (apReader (const id) v) v (lawApplicativeIdReader v) `cast` ()
   lawApplicativeComposition (Reader u) (Reader v) (Reader w) = axiomExt
     (apReader (apReader (apReader (const compose) u) v) w)
     (apReader u (apReader v w))
-    (lawApplicativeCompositionReader u v w)
+    (lawApplicativeCompositionReader u v w) `cast` ()
   lawApplicativeHomomorphism g x (Reader px) = axiomExt
     (apReader (const g) px)
     (const (g x))
-    (lawApplicativeHomomorphismReader g x px)
+    (lawApplicativeHomomorphismReader g x px) `cast` ()
   lawApplicativeInterchange (Reader u) y = axiomExt
     (apReader u (const y))
     (apReader (const (flip apply y)) u)
-    (lawApplicativeInterchangeReader u y)
+    (lawApplicativeInterchangeReader u y) `cast` ()
